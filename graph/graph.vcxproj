@@ -149,6 +149,7 @@
     <ClInclude Include="graph.h" />
     <ClInclude Include="graph_edge.h" />
     <ClInclude Include="graph_node.h" />
+    <ClInclude Include="random_generator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

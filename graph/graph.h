@@ -11,6 +11,7 @@
 #include <iostream>
 #include "graph_node.h"
 #include "graph_edge.h"
+#include "random_generator.h"
 
 using namespace std;
 class Graph{
@@ -84,7 +85,7 @@ public:
         }
         f_edges.close();
 		add_pois(); //添加兴趣点
-		add_users(); //添加用户
+		//add_users(); //添加用户
         cout << "graph init done" << endl;
     }
     ~Graph()
@@ -110,12 +111,43 @@ public:
 	 */
 	void add_pois()
 	{
-		// 添加语义位置
-		int add_poi_cnt = 1000;
+		//地图的相关信息在map_info
+		//地图edge class共0~6七个等级
+		int arr_edge_keys[] = { 0,1,2,3,4,5,6 };
+		int arr_edge_weight[] = { 10,8,6,4,3,2,1 }; //初始化权值,根据边的数目再调整,生成器权值=初始值*边数
+		vector<int> edge_keys(arr_edge_keys, arr_edge_keys + 7);
+		vector<int> edge_weights(arr_edge_weight, arr_edge_weight + 7);
+
+		vector<vector<Edge*>> vv_edges(7);  //记录每个类别的各边
+		for (int i = 0; i<edges.size(); i++) {
+			int edge_class = edges[i]->getEdgeClass();
+			vv_edges[edge_class].push_back(edges[i]);
+		}
+		for (int i = 0; i < vv_edges.size(); i++) {
+			edge_weights[i] *= vv_edges[i].size();
+		}
+
+		WRandom_Generator wr_generator(edge_keys, edge_weights);//定义基于路段权值得随机数生成器
+		//添加医院
+		add_poi_operate(1000, Semantic_type::hospital, wr_generator, vv_edges);
+		//添加学校
+		add_poi_operate(1000, Semantic_type::school, wr_generator, vv_edges);
+	}
+	void add_poi_operate(int cnt,Semantic_type s_type, WRandom_Generator &generator, const vector<vector<Edge*>> &vv_edges)
+	{
+		int add_poi_cnt = cnt;
 		Poi *pp = nullptr;
-		for (int i = 0; i < add_poi_cnt; i++) {
-			pp = new Poi(i + 1, 0.5, Semantic_type::hospital);
-			edges[i / 2]->add_poi(pp);
+		for (int i = 1; i <= add_poi_cnt; i++) {
+			double pop = (double)generator.get_next_r() / generator.get_random_max();
+			pp = new Poi(i, pop, s_type);
+			//先随机挑选一个等级,这个过程将考虑路段权值
+			int edge_class = generator.get_next_wr();
+			// 再从某类中随机挑一个
+			int edge_class_cnt = vv_edges[edge_class].size();
+			// 使用大随机数生成器
+			int random_edge_index = generator.get_next_r() % edge_class_cnt;
+			vv_edges[edge_class][random_edge_index]->add_poi(pp);
+			//cout << "edge class" << vv_edges[edge_class][random_edge_index]->getEdgeClass() << endl;
 			pois.push_back(pp);
 		}
 	}
@@ -132,6 +164,14 @@ public:
 			edges[i]->add_user(pu);
 			users.push_back(pu);
 		}
+	}
+	const vector<Poi*>& get_pois()
+	{
+		return pois;
+	}
+	const vector<LBS_User*>& get_users()
+	{
+		return users;
 	}
     const vector<Edge*>& getEdges()
     {

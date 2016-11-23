@@ -272,8 +272,10 @@ namespace graph {
 		Pen ^ yellow_pen = gcnew Pen(Color::Orange, 1.8f);
 		Pen ^ blue_pen = gcnew Pen(Color::Blue, 1.5f);
 		Pen ^ green_pen = gcnew Pen(Color::Green, 1.0f);
+		Pen ^ dark_gray_pen = gcnew Pen(Color::DarkGray, 0.5f);
 		Pen ^ gray_pen = gcnew Pen(Color::Gray, 0.5f);
-		cli::array<Pen^>^ pen_list = { red_pen,blue_pen,yellow_pen,green_pen,gray_pen };
+		Pen ^ light_gray_pen = gcnew Pen(Color::LightGray, 0.5f);
+		cli::array<Pen^>^ pen_list = { red_pen,blue_pen,yellow_pen,green_pen,dark_gray_pen,gray_pen,light_gray_pen };
 		int edge_cnt = p_graph->p_graph->getEdges().size();
 		vector<Edge*> edges = p_graph->p_graph->getEdges();
 		double x1, x2, y1, y2;
@@ -290,7 +292,8 @@ namespace graph {
 			p_du->convert_to_draw_pos(x2, y2);
 			if ((x1<0 && x2<0) || (x1>p_du->get_paint_sizex() && x2>p_du->get_paint_sizex())) continue;
 			if ((y1<0 && y2<0) || (y1>p_du->get_paint_sizey() && y2>p_du->get_paint_sizey())) continue;
-			if (edges[i]->getEdgeClass() < 5 && (edges[i]->getEdgeClass() < p_du->get_zoom() + 1 || !need_scaling)) {
+			if ((edges[i]->getEdgeClass() < p_du->get_zoom() + 1 || !need_scaling)) {
+				//绘制边
 				mg->DrawLine(pen_list[edges[i]->getEdgeClass()], (float)x1, (float)y1, (float)x2, (float)y2);
 				if (x1 == x2) continue;
 				//绘制边上的兴趣点
@@ -299,7 +302,13 @@ namespace graph {
 					float x, y;
 					x = x1 + ((float)j / (poi_size + 1)) * (x2-x1);
 					y = y1 + (x-x1)*(y2 - y1) / (x2 - x1);
-					mg->DrawRectangle(red_pen, x, y, 5.0, 5.0);
+					if (edges[i]->get_pois()[j - 1]->get_type()==Semantic_type::hospital) {
+						mg->DrawRectangle(red_pen, x, y, 5.0, 5.0);
+					}
+					else if (edges[i]->get_pois()[j - 1]->get_type() == Semantic_type::school) {
+						mg->DrawRectangle(green_pen, x, y, 5.0, 5.0);
+					}
+					
 				}
 				// 绘制边上的lbs用户
 				int user_cnt = edges[i]->get_users().size();
@@ -310,9 +319,6 @@ namespace graph {
 					mg->DrawRectangle(green_pen, x, y, 5.0, 5.0);
 				}
 			}
-			else if ((edges[i]->getEdgeClass() < p_du->get_zoom() + 1) || !need_scaling) {
-				mg->DrawLine(gray_pen, (float)x1, (float)y1, (float)x2, (float)y2);
-			}	
 		}
 		this->panel1->CreateGraphics()->DrawImage(bmp, 0, 0);
 		
@@ -412,6 +418,7 @@ private: System::Void comboBox1_SelectedIndexChanged(System::Object^  sender, Sy
 	if_nodes.close();
 	if_edges.close();
 	//触发绘制原图
+	cout << p_graph->p_graph->get_pois().size() << endl;
 	this->button1_Click(sender, e);
 }
 private: System::Void display_Load(System::Object^  sender, System::EventArgs^  e) {
