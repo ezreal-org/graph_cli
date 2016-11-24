@@ -9,6 +9,7 @@ using namespace graph; //自己的命名空间
 
 int main()
 {
+	freopen("lpp_algorithm\\out1.txt", "w", stdout);
 	Application::EnableVisualStyles();
 	Application::SetCompatibleTextRenderingDefault(false);
 

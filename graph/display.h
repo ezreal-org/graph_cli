@@ -1,7 +1,9 @@
 #pragma once
 #include "edge_cluster_graph.h"
 #include "draw_util.h"
+#include "lpp_algorithm\sa.h"
 #include <fstream>
+#include <cstdlib>
 using namespace std;
 
 namespace graph {
@@ -54,6 +56,7 @@ namespace graph {
 	private: System::Windows::Forms::CheckBox^  checkBox1;
 	private: System::Windows::Forms::ComboBox^  comboBox1;
 	private: System::Windows::Forms::Label^  label1;
+	private: System::Windows::Forms::Button^  button10;
 
 
 
@@ -84,6 +87,7 @@ namespace graph {
 			this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
 			this->comboBox1 = (gcnew System::Windows::Forms::ComboBox());
 			this->label1 = (gcnew System::Windows::Forms::Label());
+			this->button10 = (gcnew System::Windows::Forms::Button());
 			this->SuspendLayout();
 			// 
 			// panel1
@@ -204,12 +208,23 @@ namespace graph {
 			this->label1->TabIndex = 5;
 			this->label1->Text = L"选择地图";
 			// 
+			// button10
+			// 
+			this->button10->Location = System::Drawing::Point(1267, 928);
+			this->button10->Name = L"button10";
+			this->button10->Size = System::Drawing::Size(124, 46);
+			this->button10->TabIndex = 7;
+			this->button10->Text = L"执行算法";
+			this->button10->UseVisualStyleBackColor = true;
+			this->button10->Click += gcnew System::EventHandler(this, &display::button10_Click);
+			// 
 			// display
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(12, 24);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->AutoSize = true;
 			this->ClientSize = System::Drawing::Size(1425, 1255);
+			this->Controls->Add(this->button10);
 			this->Controls->Add(this->label1);
 			this->Controls->Add(this->comboBox1);
 			this->Controls->Add(this->checkBox1);
@@ -275,7 +290,7 @@ namespace graph {
 		Pen ^ dark_gray_pen = gcnew Pen(Color::DarkGray, 0.5f);
 		Pen ^ gray_pen = gcnew Pen(Color::Gray, 0.5f);
 		Pen ^ light_gray_pen = gcnew Pen(Color::LightGray, 0.5f);
-		cli::array<Pen^>^ pen_list = { red_pen,blue_pen,yellow_pen,green_pen,dark_gray_pen,gray_pen,light_gray_pen };
+		cli::array<Pen^>^ pen_list = { red_pen,yellow_pen,blue_pen,green_pen,dark_gray_pen,gray_pen,light_gray_pen };
 		int edge_cnt = p_graph->p_graph->getEdges().size();
 		vector<Edge*> edges = p_graph->p_graph->getEdges();
 		double x1, x2, y1, y2;
@@ -304,8 +319,9 @@ namespace graph {
 					y = y1 + (x-x1)*(y2 - y1) / (x2 - x1);
 					if (edges[i]->get_pois()[j - 1]->get_type()==Semantic_type::hospital) {
 						mg->DrawRectangle(red_pen, x, y, 5.0, 5.0);
+						
 					}
-					else if (edges[i]->get_pois()[j - 1]->get_type() == Semantic_type::school) {
+					else{
 						mg->DrawRectangle(green_pen, x, y, 5.0, 5.0);
 					}
 					
@@ -316,7 +332,7 @@ namespace graph {
 					float x, y;
 					x = x1 + ((float)j / (user_cnt + 2)) * (x2 - x1);
 					y = y1 + (x - x1)*(y2 - y1) / (x2 - x1);
-					mg->DrawRectangle(green_pen, x, y, 5.0, 5.0);
+					mg->DrawEllipse(blue_pen, x, y, 1.5, 1.5);
 				}
 			}
 		}
@@ -347,7 +363,7 @@ namespace graph {
 	}
 private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e) {
 	p_du->zoom_plus();
-	if (p_du->get_zoom() > 4) this->button3->Enabled = false;
+	if (p_du->get_zoom() > 6) this->button3->Enabled = false;
 	this->button4->Enabled = true;
 	if (draw_index == 1)
 		update_view();
@@ -395,12 +411,12 @@ private: System::Void button8_Click(System::Object^  sender, System::EventArgs^ 
 private: System::Void comboBox1_SelectedIndexChanged(System::Object^  sender, System::EventArgs^  e) {
 	ifstream if_nodes, if_edges;
 	if (this->comboBox1->SelectedIndex == 0) {
-		if_nodes.open("C:\\oldenburgGen_node.txt");
-		if_edges.open("C:\\oldenburgGen_edge.txt");
+		if_nodes.open("map_data\\oldenburgGen_node.txt");
+		if_edges.open("map_data\\oldenburgGen_edge.txt");
 	}
 	else if (this->comboBox1->SelectedIndex == 1) {
-		if_nodes.open("C:\\sanfrancisco_node.txt");
-		if_edges.open("C:\\sanfrancisco_edge.txt");
+		if_nodes.open("map_data\\sanfrancisco_node.txt");
+		if_edges.open("map_data\\sanfrancisco_edge.txt");
 	}
 	this->button1->Text = "等待";
 	this->button2->Text = "等待";
@@ -430,6 +446,11 @@ private: System::Void panel1_Paint(System::Object^  sender, System::Windows::For
 		update_view();
 	else
 		update_ec_view();
+}
+private: System::Void button10_Click(System::Object^  sender, System::EventArgs^  e) {
+	//执行算法
+	Lppa_sa *p_sa = new Lppa_sa(this->p_graph->p_graph);
+	delete p_sa;
 }
 };
 }

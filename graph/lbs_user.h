@@ -14,6 +14,10 @@ public:
 		this->semantic_require = s_require;
 		this->sensitive_vals = s_values;
 	}
+	long long get_uid()
+	{
+		return id;
+	}
 	int get_k()
 	{
 		return k_require;

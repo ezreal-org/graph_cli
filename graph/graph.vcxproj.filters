@@ -13,6 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="memos">
+      <UniqueIdentifier>{f6404b33-3d0c-4a64-ab65-f783573bc4c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="map_data">
+      <UniqueIdentifier>{3d930e0e-e0bd-43ed-b5cc-2e68db5f1a07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm">
+      <UniqueIdentifier>{c9e16061-ef2d-4117-95f1-d9badc19f06f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="display.h">
@@ -48,6 +57,18 @@
     <ClInclude Include="random_generator.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="lpp_algorithm\sa.h">
+      <Filter>algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="lpp_algorithm\plpca.h">
+      <Filter>algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="lpp_algorithm\ecf.h">
+      <Filter>algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="memos\io_redirection.txt">
+      <Filter>memos</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -58,5 +79,34 @@
     <EmbeddedResource Include="display.resx">
       <Filter>资源文件</Filter>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="memos\experiment_setting.txt">
+      <Filter>memos</Filter>
+    </Text>
+    <Text Include="memos\map_info.txt">
+      <Filter>memos</Filter>
+    </Text>
+    <Text Include="map_data\oldenburgGen_edge.txt">
+      <Filter>map_data</Filter>
+    </Text>
+    <Text Include="map_data\oldenburgGen_node.txt">
+      <Filter>map_data</Filter>
+    </Text>
+    <Text Include="map_data\sanfrancisco_edge.txt">
+      <Filter>map_data</Filter>
+    </Text>
+    <Text Include="map_data\sanfrancisco_node.txt">
+      <Filter>map_data</Filter>
+    </Text>
+    <Text Include="map_data\Tgr06077-1_edge.txt">
+      <Filter>map_data</Filter>
+    </Text>
+    <Text Include="map_data\Tgr06077-1_node.txt">
+      <Filter>map_data</Filter>
+    </Text>
+    <Text Include="lpp_algorithm\out1.txt">
+      <Filter>algorithm</Filter>
+    </Text>
   </ItemGroup>
 </Project>

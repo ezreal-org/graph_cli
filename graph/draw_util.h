@@ -87,7 +87,7 @@ private:
 	//以下用于缩放
 	double draw_start_x;
 	double draw_start_y;
-	int zoom; // 1-5 
+	int zoom; // 1-7 
 	double paint_size_x;
 	double paint_size_y;
 };

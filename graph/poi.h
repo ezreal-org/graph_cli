@@ -10,7 +10,9 @@ enum Semantic_type
 	school = 0,
 	hospital,
 	market,
-	bar
+	bar,
+	residence,
+	company
 };
 
 class Poi
@@ -21,6 +23,10 @@ public:
 		poi_id = id;
 		this->pop = pop;
 		this->poi_type = type;
+	}
+	long long get_poi_id()
+	{
+		return poi_id;
 	}
 	double get_pop() 
 	{
