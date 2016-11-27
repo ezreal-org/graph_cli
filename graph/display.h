@@ -450,6 +450,7 @@ private: System::Void panel1_Paint(System::Object^  sender, System::Windows::For
 private: System::Void button10_Click(System::Object^  sender, System::EventArgs^  e) {
 	//Ö´ÐÐËã·¨
 	Lppa_sa *p_sa = new Lppa_sa(this->p_graph->p_graph);
+	p_sa->lpp();
 	delete p_sa;
 }
 };
