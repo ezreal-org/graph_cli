@@ -153,10 +153,15 @@ public:
 	void add_users(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges)
 	{
 		//定义几类用户偏好的模板
-		vector<double> u_type1 = { 0.1,0.6,0.2,0.3,0.1,0.1 }; // 医院敏感
-		vector<double> u_type2 = { 0.1,0.1,0.1,0.6,0.1,0.1 };
-		vector<double> u_type3 = { 0.2,0.1,0.1,0.2,0.2,0.6 };
-		vector<double> u_type4 = { 0.6,0.2,0.4,0.1,0.2,0.1 };
+		vector<double> u_type1 = { 0.1,0.9,0.2,0.3,0.1,0.1 }; // 医院敏感
+		vector<double> u_type2 = { 0.1,0.1,0.1,0.9,0.1,0.1 };
+		vector<double> u_type3 = { 0.2,0.1,0.1,0.2,0.2,0.8 };
+		vector<double> u_type4 = { 0.8,0.2,0.4,0.1,0.2,0.1 };
+
+		/*vector<double> u_type1 = { 1,1,1,1,1,1 };
+		vector<double> u_type2 = { 1,1,1,1,1,1 };
+		vector<double> u_type3 = { 1,1,1,1,1,1 };
+		vector<double> u_type4 = { 1,1,1,1,1,1 };*/
 
 		add_user_operate(6000, u_type1, generator, vv_edges);
 		add_user_operate(4000, u_type2, generator, vv_edges);
@@ -187,9 +192,10 @@ public:
 		int add_user_cnt = cnt;
 		LBS_User *pu = nullptr;
 		for (int i = 0; i < add_user_cnt; i++) {
-			double s_require = 0.2 + ((double)generator->get_next_r() / generator->get_random_max()) * (0.8-0.2); // 0.2~0.8
+			//double s_require = 0.2 + ((double)generator->get_next_r() / generator->get_random_max()) * (0.8-0.2); // 0.2~0.8
+			double s_require = 0.2;
 			long long u_id = users.size() + 1;
-			pu = new LBS_User(u_id, 5, 5, s_require, u_profile);
+			pu = new LBS_User(u_id, 10, 5, s_require, u_profile);
 			//先随机挑选一个等级,这个过程将考虑路段权值
 			int edge_class = generator->get_next_wr();
 			// 再从某类中随机挑一个

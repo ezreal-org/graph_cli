@@ -69,6 +69,12 @@
     <ClInclude Include="memos\io_redirection.txt">
       <Filter>memos</Filter>
     </ClInclude>
+    <ClInclude Include="lpp_algorithm\sa_enhanced.h">
+      <Filter>algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="lpp_algorithm\util.h">
+      <Filter>algorithm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

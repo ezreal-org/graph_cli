@@ -150,6 +150,8 @@
     <ClInclude Include="lpp_algorithm\ecf.h" />
     <ClInclude Include="lpp_algorithm\plpca.h" />
     <ClInclude Include="lpp_algorithm\sa.h" />
+    <ClInclude Include="lpp_algorithm\sa_enhanced.h" />
+    <ClInclude Include="lpp_algorithm\util.h" />
     <ClInclude Include="memos\io_redirection.txt" />
     <ClInclude Include="poi.h" />
     <ClInclude Include="graph.h" />
