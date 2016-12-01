@@ -27,7 +27,7 @@ public:
 			p_node2 = p->getNode2();
 			ec_node_x = (p_node1->getX() + p_node2->getX()) / 2;
 			ec_node_y = (p_node1->getY() + p_node2->getY()) / 2;
-			EC_Node *pNode = new EC_Node(p->getId(),p->getEdgeClass(),p->getEdgeLen(),ec_node_x,ec_node_y,p->get_users(),p->get_pois());
+			EC_Node *pNode = new EC_Node(p->getId(),p,ec_node_x,ec_node_y,p->get_users(),p->get_pois());
             nodes.push_back(pNode);
             nodes_map[p->getId()] = pNode;
         }

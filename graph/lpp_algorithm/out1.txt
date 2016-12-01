@@ -6,9 +6,9 @@ edge graph nodes initialed !!
 6105 src_graph nodes 
 edge graph init done
 498
-total time consume:0.188
-success:13914
-failure:86
+total time consume:32.76
+success:7244
+failure:6756
 calculate open vetex begin:
-average openvetex: 4.25607
-average cloak size: 6.88407
+average openvetex: 3.87134
+average cloak size: 5.80177

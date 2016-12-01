@@ -15,16 +15,16 @@ using namespace std;
  * 作为路网遍历使用
  */
 class EC_Edge;
+class Edge;
 class EC_Node{
 public:
     /*
      * 边图中的 顶点 id = 原图 边 id
      */
-    EC_Node(long long id, int edge_class, double len,double x,double y,const vector<LBS_User*> &users,const vector<Poi*> &pois)
+    EC_Node(long long id, Edge *src_edge,double x,double y,const vector<LBS_User*> &users,const vector<Poi*> &pois)
     {
         this->ec_id = id;
-        this->edge_class = edge_class;
-        this->len = len;
+		this->src_edge = src_edge;
 		this->x = x;
 		this->y = y;
 		this->users = users;
@@ -43,6 +43,10 @@ public:
     {
         return ec_id;
     }
+	Edge*& get_src_edge()
+	{
+		return src_edge;
+	}
 	double get_x()
 	{
 		return x;
@@ -51,15 +55,7 @@ public:
 	{
 		return y;
 	}
-    double get_len()
-    {
-        return len;
-    }
-    int get_edge_class()
-    {
-        return edge_class;
-    }
-    vector<EC_Node*> get_adj_nodes()
+    vector<EC_Node*>& get_adj_nodes()
     {
         return adj_nodes;
     }
@@ -73,12 +69,11 @@ public:
 	}
 private:
     long long ec_id;
-    double len;
 	double x, y;
-    int edge_class;
     vector<EC_Node*> adj_nodes;
     vector<EC_Edge*> related_edges; //记录边图中，一个顶点产生相邻接顶点对应边图的边,一般用不上
 	vector<LBS_User*> users;
 	vector<Poi*> pois;
+	Edge *src_edge;
 };
 #endif //C_PLUS_PLUS_PRACTICE_EDGE_CLUSTER_NODE_H
