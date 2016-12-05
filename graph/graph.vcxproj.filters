@@ -75,6 +75,9 @@
     <ClInclude Include="lpp_algorithm\util.h">
       <Filter>algorithm</Filter>
     </ClInclude>
+    <ClInclude Include="lpp_algorithm\ec_sae.h">
+      <Filter>algorithm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

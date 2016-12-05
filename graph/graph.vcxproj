@@ -148,6 +148,7 @@
     <ClInclude Include="edge_cluster_node.h" />
     <ClInclude Include="lbs_user.h" />
     <ClInclude Include="lpp_algorithm\ecf.h" />
+    <ClInclude Include="lpp_algorithm\ec_sae.h" />
     <ClInclude Include="lpp_algorithm\plpca.h" />
     <ClInclude Include="lpp_algorithm\sa.h" />
     <ClInclude Include="lpp_algorithm\sa_enhanced.h" />

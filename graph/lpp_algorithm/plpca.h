@@ -30,7 +30,7 @@ public:
 		anonymization_time_total = 0;
 		cnt_of_failure = 0;
 		cnt_of_success = 0;
-		l_max = 8;
+		l_max = 10;
 	}
 	void lpp()
 	{
@@ -65,6 +65,11 @@ public:
 		int user_cnt = vv_cloaks.size();
 		for (int i = 0; i < user_cnt; i++) {
 			cloak_set = vv_cloaks[i]; //匿名集
+			if (cloak_set.size() < 1) { //匿名失败在统计中算l_max
+				all_edge_size += l_max;
+				all_openvetex_cnt += l_max;
+				continue;
+			}
 			node_set.clear();
 			//初始化相关顶点集
 			for (int kk = 0; kk < cloak_set.size(); kk++) {
@@ -191,6 +196,9 @@ public:
 		}
 		else {
 			cnt_of_failure++;
+			vector<Edge*> v_cloak;
+			v_cloak.clear(); //失败时添加空匿名集，用于统计
+			vv_cloaks.push_back(v_cloak);
 			is_success.push_back(false);
 		}
 	}
