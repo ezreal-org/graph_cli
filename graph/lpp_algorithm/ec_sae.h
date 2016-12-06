@@ -22,6 +22,7 @@ s_type_poi_pop/poi_pop_all >s_require 的定义为敏感语义
 #include <vector>
 #include <set>
 #include <map>
+#include <unordered_set>
 using namespace std;
 
 class Lppa_ecsa_e
@@ -39,7 +40,7 @@ public:
 	//保护算法
 	void lpp()
 	{
-		vector<EC_Node*> nodes = p_graph->get_nodes();
+		const vector<EC_Node*> &nodes = p_graph->get_nodes();
 		LBS_User *pu = nullptr;
 		clock_t start, finish;
 		start = clock();
@@ -70,7 +71,7 @@ public:
 		int user_cnt = vv_cloak_sets.size();
 		for (int i = 0; i < vv_cloak_sets.size(); i++) {
 			cloak_set.clear();
-			for (int j = 0; j < vv_cloak_sets[i].size(); j++) {
+			for (int j=0; j<vv_cloak_sets[i].size();j++) {
 				cloak_set.push_back(vv_cloak_sets[i][j]->get_src_edge());
 			}
 			node_set.clear();
@@ -88,6 +89,7 @@ public:
 			}
 			all_edge_size += cloak_set.size();
 			int cnt_of_circle = 0, cnt_of_openvetex = 0;
+
 			for (it_node_set = node_set.begin(); it_node_set != node_set.end(); it_node_set++) {
 				adj_edges = (*it_node_set)->getAdjEdges();
 				for (int j = 0; j < adj_edges.size(); j++) { //判断所有临近边是否都在匿名集
@@ -97,6 +99,7 @@ public:
 					}
 				}
 			}
+
 			open_vetex_cnt.push_back(cnt_of_openvetex);
 			all_openvetex_cnt += cnt_of_openvetex;
 			//cout << "open vetex: "<< cnt_of_openvetex << endl;
@@ -107,24 +110,19 @@ public:
 
 	}
 	//为每个用户
-	void sa(LBS_User *&pu, EC_Node *&pn)
+	void sa(LBS_User *&pu, EC_Node *pn)
 	{
-		/*cout << "user:" << pu->get_k() << " " << pu->get_l() << " " << pu->get_s() << endl;
-		cout << "profile:";
-		for (int kk = 0; kk < pu->get_sensitive_vals().size(); kk++) {
-		cout << pu->get_sensitive_vals()[kk] << " ";
-		}
-		cout << endl;*/
 		k = 0;
 		l = 0;
-		double w1 = 2, w2 = 0.5; // w2调节结构的重要程度
 		accumulate_pop = 0.0;
 		accumulate_svalue = 0.0;
+		double w1 = 2, w2 = 1; // w2调节结构的重要程度
 		bool is_satisfied = false;
 		double accumulate_svalue = 0, accumulate_pop = 0;
 		vector<EC_Node*> cloak_set;
+		//unordered_set<EC_Node*> cloak_set;
 		map<EC_Node*, pair<double, double>> candidate_map;
-		vector<double> sensitive_vals = pu->get_sensitive_vals();
+		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
 		is_satisfied = add_node_to_cloakset(pu, pn, cloak_set, candidate_map);
 		for (int i = 1; i < l_max && !is_satisfied; i++) {
 			map<EC_Node*, pair<double, double>>::iterator it_candidate, it_maximal_score;
@@ -136,12 +134,11 @@ public:
 			else {
 				w1 = 1;
 			}
-			double minimal_miss_s = 0x7fffffff,maximal_miss_s = 0,maximal_score = 0;
-			//维持一个堆来减少查询最大最小值?
+			double minimal_miss_s = 0x7fffffff, maximal_miss_s = 0, maximal_score = 0;
+			//--
 			for (it_candidate = candidate_map.begin(); it_candidate != candidate_map.end(); it_candidate++) { //已经计算了的就不用计算
 				double candidate_svalue = it_candidate->second.first;
 				double candidate_pop = it_candidate->second.second;
-				//double missed_value = (candidate_svalue + accumulate_svalue) / pu->get_s() - (accumulate_pop + candidate_pop);
 				double missed_value = candidate_svalue / pu->get_s() - candidate_pop;
 				if (missed_value < minimal_miss_s) minimal_miss_s = missed_value;
 				if (missed_value > maximal_miss_s) maximal_miss_s = missed_value;
@@ -152,10 +149,10 @@ public:
 					k_score = 1;
 				}
 				else {
-					k_score = ((double)k+(it_candidate->first->get_users().size())) / pu->get_k();
+					k_score = ((double)k + (it_candidate->first->get_users().size())) / pu->get_k();
 					k_score = k_score < 1 ? k_score : 1;
 				}
-				if (fabs(maximal_miss_s-minimal_miss_s)<0.001) {
+				if (fabs(maximal_miss_s - minimal_miss_s) < 0.001) {
 					s_score = 1;
 				}
 				else {
@@ -165,9 +162,33 @@ public:
 					double missed_value = candidate_svalue / pu->get_s() - candidate_pop;
 					s_score = w1 * (maximal_miss_s - missed_value) / (maximal_miss_s - minimal_miss_s);
 				}
+				//struct
+				vector<EC_Node*> &this_adj_nodes = it_candidate->first->get_adj_nodes();
+				int cnt_of_inner_node = 0;
+
+				//性能瓶颈
+				//for (int i = 0; i < this_adj_nodes.size(); i++) {
+					//if (vector_find(cloak_set, this_adj_nodes[i])) {
+					//if(cloak_set.find(this_adj_nodes[i])!=cloak_set.end()) {}
+						cnt_of_inner_node++;
+					//}
+					//if (cnt_of_inner_node > 1) break;
+				//}
+
+				////openvetex是评价指标
+				//if (cnt_of_inner_node > 1) { //边图成环
+				//	struct_score = 0.3;
+
+				//}
+				//else {
+				//	struct_score = 0;
+				//}
+				struct_score = 0;
+				//struct_score = (double)rand() / RAND_MAX *0.3;
+				double score = k_score + s_score + struct_score;
 				//选择得分最高的
-				if (k_score + s_score > maximal_score) {
-					maximal_score = k_score + s_score;
+				if (score > maximal_score) {
+					maximal_score = score;
 					it_maximal_score = it_candidate;
 				}
 			}
@@ -184,34 +205,23 @@ public:
 			is_success.push_back(false);
 			cnt_of_failure++;
 		}
-		/*cout << (is_satisfied == true ? "success" : "not success") << endl;
-		cout << "cloak set info: " << endl;
-		for (int i = 0; i < cloak_set.size(); i++) {
-		cout << "k:" << cloak_set[i]->get_users().size() << endl;
-		for (int j = 0; j < cloak_set[i]->get_pois().size(); j++) {
-		cout << "type:" << cloak_set[i]->get_pois()[j]->get_type() << " pop:" << cloak_set[i]->get_pois()[j]->get_pop() << endl;
-		}
-		cout << "--" << endl;
-		}
-		if (cloak_set.size() > 5) cout << "####" << endl;*/
 		vv_cloak_sets.push_back(cloak_set);
-		//cout << "====cloak for this user end.=====" << endl;
 	}
 
 
 	bool add_node_to_cloakset(LBS_User *&pu, EC_Node *new_node, vector<EC_Node*> &cloak_set, map<EC_Node*, pair<double, double>> &candidate_map)
 	{
 		//更新匿名集和候选集
-		vector<double> sensitive_vals = pu->get_sensitive_vals();
+		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
 		cloak_set.push_back(new_node);
+		//cloak_set.insert(new_node);
 		Node *pn1, *pn2;
-		vector<EC_Node*> adj_nodes;
-		adj_nodes = new_node->get_adj_nodes(); //只影响刚加入的部分
+		vector<EC_Node*> &adj_nodes = new_node->get_adj_nodes(); //只影响刚加入的部分
 
 		for (int i = 0; i < adj_nodes.size(); i++) {
 			if (candidate_map.find(adj_nodes[i]) == candidate_map.end() && !vector_find(cloak_set,adj_nodes[i])) { //加入候选集
 				double candidate_edge_svalue = 0.0, candidate_edge_pop = 0.0;
-				vector<Poi*> e_pois = adj_nodes[i]->get_pois();
+				const vector<Poi*> &e_pois = adj_nodes[i]->get_pois();
 				for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 					int poi_type = (int)e_pois[j]->get_type();
 					candidate_edge_svalue += (sensitive_vals[poi_type] * e_pois[j]->get_pop());
@@ -225,7 +235,7 @@ public:
 		l++;
 		double candidate_svalue = 0.0, candidate_pop = 0.0;
 		if (candidate_map.find(new_node) == candidate_map.end()) { //第一次执行
-			vector<Poi*> e_pois = new_node->get_pois();
+			const vector<Poi*> &e_pois = new_node->get_pois();
 			for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 				int poi_type = (int)e_pois[j]->get_type();
 				candidate_svalue += (sensitive_vals[poi_type] * e_pois[j]->get_pop());
@@ -239,16 +249,16 @@ public:
 		accumulate_svalue += candidate_svalue;
 		accumulate_pop += candidate_pop;
 		if (k < pu->get_k() || l < pu->get_l() || (accumulate_pop > 0.001 && accumulate_svalue / accumulate_pop > pu->get_s())) return false;
-		//cout << "find satisfied" << endl;
 		return true;
 	}
 private:
+	//每个匿名用户
 	int k, l;
-	double accumulate_svalue, accumulate_pop; //每个匿名用户
+	double accumulate_svalue, accumulate_pop;
+	//统计信息
 	vector<bool> is_success;
 	vector<LBS_User*> users;
 	vector<vector<EC_Node*>> vv_cloak_sets;
-	//统计信息
 	double anonymization_time_total;
 	int cnt_of_success;
 	int cnt_of_failure;

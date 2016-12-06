@@ -101,13 +101,13 @@ public:
 		}
 		cout << endl;*/
 		bool is_satisfied = false;
-		int k_now = 0, l_now = 0;
-		double accumulate_svalue = 0, accumulate_pop = 0;
+		k = 0, l = 0;
+		accumulate_svalue = 0, accumulate_pop = 0;
 		vector<Edge*> cloak_set;
 		map<Edge*, pair<double,double>> candidate_map;
 		set<Node*> inner_node_set;
-		vector<double> sensitive_vals = pu->get_sensitive_vals();
-		is_satisfied = add_edge_to_cloakset(pu, pe, k_now, l_now, accumulate_svalue, accumulate_pop, cloak_set, candidate_map, inner_node_set);
+		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
+		is_satisfied = add_edge_to_cloakset(pu, pe, cloak_set, candidate_map, inner_node_set);
 		for (int i = 1; i < l_max && !is_satisfied; i++) {
 			map<Edge*, pair<double,double>>::iterator it_candidate, it_minimal_svalue;
 			double minimal_svalue = 0x7fffffff;
@@ -129,11 +129,11 @@ public:
 				}
 			}
 			if (it_candidate != candidate_map.end()) { //找到非敏感poi
-				is_satisfied = add_edge_to_cloakset(pu, it_candidate->first, k_now, l_now, accumulate_svalue, accumulate_pop, cloak_set, candidate_map, inner_node_set);
+				is_satisfied = add_edge_to_cloakset(pu, it_candidate->first, cloak_set, candidate_map, inner_node_set);
 				candidate_map.erase(it_candidate);
 			}
 			else {
-				is_satisfied = add_edge_to_cloakset(pu, it_minimal_svalue->first, k_now, l_now, accumulate_svalue, accumulate_pop, cloak_set, candidate_map, inner_node_set);
+				is_satisfied = add_edge_to_cloakset(pu, it_minimal_svalue->first, cloak_set, candidate_map, inner_node_set);
 				candidate_map.erase(it_minimal_svalue);
 			}
 		}//end for
@@ -145,39 +145,27 @@ public:
 			is_success.push_back(false);
 			cnt_of_failure++;
 		}
-		/*cout << (is_satisfied == true ? "success" : "not success") << endl;
-		cout << "cloak set info: " << endl;
-		for (int i = 0; i < cloak_set.size(); i++) {
-			cout << "k:" << cloak_set[i]->get_users().size() << endl;
-			for (int j = 0; j < cloak_set[i]->get_pois().size(); j++) {
-				cout << "type:" << cloak_set[i]->get_pois()[j]->get_type() << " pop:" << cloak_set[i]->get_pois()[j]->get_pop() << endl;
-			}
-			cout << "--" << endl;
-		}
-		if (cloak_set.size() > 5) cout << "####" << endl;*/
 		vv_cloak_sets.push_back(cloak_set);
 		vs_inner_nodes.push_back(inner_node_set);
-		//cout << "====cloak for this user end.=====" << endl;
 	}
 
 
-	bool add_edge_to_cloakset(LBS_User *&pu, Edge *new_edge, int &k, int &l, double &accumulate_svalue, double &accumulate_pop, vector<Edge*> &cloak_set, map<Edge*, pair<double,double>> &candidate_map, set<Node*> &inner_node_set)
+	bool add_edge_to_cloakset(LBS_User *&pu, Edge *new_edge,vector<Edge*> &cloak_set, map<Edge*, pair<double,double>> &candidate_map, set<Node*> &inner_node_set)
 	{
 		//更新匿名集和候选集
-		vector<double> sensitive_vals = pu->get_sensitive_vals();
+		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
 		cloak_set.push_back(new_edge);
 		Node *pn1, *pn2;
-		vector<Edge*> adj_edges;
 		pn1 = new_edge->getNode1(); //加入一条边,增加一个新顶点或者不变
 		pn2 = new_edge->getNode2(); //只影响刚加入的部分
 		if (inner_node_set.find(pn1) == inner_node_set.end()) {
 			inner_node_set.insert(pn1);
-			adj_edges = pn1->getAdjEdges();
+			vector<Edge*> &adj_edges = pn1->getAdjEdges();
 			for (int i = 0; i < adj_edges.size(); i++) { //计算邻居边对该用户的敏感情况
 				Edge *candidate_edge = adj_edges[i];
 				if (candidate_edge != new_edge) {
 					double candidate_edge_svalue = 0.0, candidate_edge_pop = 0.0;
-					vector<Poi*> e_pois = candidate_edge->get_pois();
+					const vector<Poi*> &e_pois = candidate_edge->get_pois();
 					for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 						int poi_type = (int)e_pois[j]->get_type();
 						candidate_edge_svalue += (sensitive_vals[poi_type] * e_pois[j]->get_pop());
@@ -189,12 +177,12 @@ public:
 		}
 		if (inner_node_set.find(pn2) == inner_node_set.end()) {
 			inner_node_set.insert(pn2);
-			adj_edges = pn2->getAdjEdges();
+			vector<Edge*> &adj_edges = pn2->getAdjEdges();
 			for (int i = 0; i < adj_edges.size(); i++) {
 				Edge *candidate_edge = adj_edges[i];
 				if (candidate_edge != new_edge) {
 					double candidate_edge_svalue = 0.0, candidate_edge_pop = 0.0;
-					vector<Poi*> e_pois = candidate_edge->get_pois();
+					const vector<Poi*> &e_pois = candidate_edge->get_pois();
 					for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 						int poi_type = (int)e_pois[j]->get_type();
 						candidate_edge_svalue += (sensitive_vals[poi_type] * e_pois[j]->get_pop());
@@ -209,7 +197,7 @@ public:
 		l++;
 		double candidate_svalue = 0.0, candidate_pop = 0.0;
 		if (candidate_map.find(new_edge) == candidate_map.end()) { //第一次执行
-			vector<Poi*> e_pois = new_edge->get_pois();
+			const vector<Poi*> &e_pois = new_edge->get_pois();
 			for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 				int poi_type = (int)e_pois[j]->get_type();
 				candidate_svalue += (sensitive_vals[poi_type] * e_pois[j]->get_pop());
@@ -227,6 +215,8 @@ public:
 		return true;
 	}
 private:
+	int k, l;
+	double accumulate_svalue = 0, accumulate_pop = 0;
 	vector<bool> is_success;
 	vector<LBS_User*> users;
 	vector<vector<Edge*>> vv_cloak_sets;

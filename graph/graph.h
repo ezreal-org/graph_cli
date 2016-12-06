@@ -137,17 +137,17 @@ public:
 	void add_pois(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges)
 	{
 		//添加学校
-		add_poi_operate(64, Semantic_type::school, generator,vv_edges);
+		add_poi_operate(164, Semantic_type::school, generator,vv_edges);
 		//添加医院
-		add_poi_operate(72, Semantic_type::hospital, generator, vv_edges);
+		add_poi_operate(172, Semantic_type::hospital, generator, vv_edges);
 		//添加商场
-		add_poi_operate(72, Semantic_type::market, generator, vv_edges);
+		add_poi_operate(172, Semantic_type::market, generator, vv_edges);
 		//添加bar
-		add_poi_operate(100, Semantic_type::bar, generator, vv_edges);
+		add_poi_operate(200, Semantic_type::bar, generator, vv_edges);
 		//添加住宅区
-		add_poi_operate(132, Semantic_type::residence, generator, vv_edges);
+		add_poi_operate(232, Semantic_type::residence, generator, vv_edges);
 		//添加公司
-		add_poi_operate(58, Semantic_type::company, generator, vv_edges);
+		add_poi_operate(158, Semantic_type::company, generator, vv_edges);
 	}
     //添加用户
 	void add_users(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges)
@@ -193,9 +193,9 @@ public:
 		LBS_User *pu = nullptr;
 		for (int i = 0; i < add_user_cnt; i++) {
 			//double s_require = 0.2 + ((double)generator->get_next_r() / generator->get_random_max()) * (0.8-0.2); // 0.2~0.8
-			double s_require = 0.6;
+			double s_require = 0.2;
 			long long u_id = users.size() + 1;
-			pu = new LBS_User(u_id, 20, 5, s_require, u_profile);
+			pu = new LBS_User(u_id, 10, 10, s_require, u_profile);
 			//先随机挑选一个等级,这个过程将考虑路段权值
 			int edge_class = generator->get_next_wr();
 			// 再从某类中随机挑一个

@@ -34,7 +34,7 @@ public:
     {
         return y;
     }
-    vector<Edge*> getAdjEdges()
+    vector<Edge*>& getAdjEdges()
     {
         return edges;
     }
