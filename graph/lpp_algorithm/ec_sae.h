@@ -22,7 +22,6 @@ s_type_poi_pop/poi_pop_all >s_require 的定义为敏感语义
 #include <vector>
 #include <set>
 #include <map>
-#include <unordered_set>
 using namespace std;
 
 class Lppa_ecsa_e
@@ -34,7 +33,7 @@ public:
 		anonymization_time_total = 0;
 		cnt_of_failure = 0;
 		cnt_of_success = 0;
-		l_max = 100;
+		l_max = 30;
 		//打印当前地图状态
 	}
 	//保护算法
@@ -43,6 +42,8 @@ public:
 		const vector<EC_Node*> &nodes = p_graph->get_nodes();
 		LBS_User *pu = nullptr;
 		clock_t start, finish;
+		is_node_selecteds = new bool[nodes.size()];
+		is_node_candidate = new bool[nodes.size()];
 		start = clock();
 		for (int i = 0; i < nodes.size(); i++) {
 			for (int j = 0; j < nodes[i]->get_users().size(); j++) {
@@ -53,6 +54,8 @@ public:
 
 		}
 		finish = clock();
+		delete []is_node_selecteds;
+		delete []is_node_candidate;
 		double time_cost = (double)(finish - start) / CLOCKS_PER_SEC;
 		cout << "total time consume:" << time_cost << endl;
 		cout << "success:" << cnt_of_success << endl;
@@ -116,12 +119,14 @@ public:
 		l = 0;
 		accumulate_pop = 0.0;
 		accumulate_svalue = 0.0;
+		memset(is_node_selecteds, false, p_graph->get_nodes().size());
+		memset(is_node_candidate, false, p_graph->get_nodes().size());
 		double w1 = 2, w2 = 1; // w2调节结构的重要程度
 		bool is_satisfied = false;
 		double accumulate_svalue = 0, accumulate_pop = 0;
 		vector<EC_Node*> cloak_set;
-		//unordered_set<EC_Node*> cloak_set;
 		map<EC_Node*, pair<double, double>> candidate_map;
+
 		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
 		is_satisfied = add_node_to_cloakset(pu, pn, cloak_set, candidate_map);
 		for (int i = 1; i < l_max && !is_satisfied; i++) {
@@ -158,7 +163,6 @@ public:
 				else {
 					double candidate_svalue = it_candidate->second.first;
 					double candidate_pop = it_candidate->second.second;
-					//double missed_value = (candidate_svalue + accumulate_svalue) / pu->get_s() - (accumulate_pop + candidate_pop);
 					double missed_value = candidate_svalue / pu->get_s() - candidate_pop;
 					s_score = w1 * (maximal_miss_s - missed_value) / (maximal_miss_s - minimal_miss_s);
 				}
@@ -167,23 +171,22 @@ public:
 				int cnt_of_inner_node = 0;
 
 				//性能瓶颈
-				//for (int i = 0; i < this_adj_nodes.size(); i++) {
-					//if (vector_find(cloak_set, this_adj_nodes[i])) {
-					//if(cloak_set.find(this_adj_nodes[i])!=cloak_set.end()) {}
+				for (int i = 0; i < this_adj_nodes.size(); i++) {
+					if (is_node_selecteds[this_adj_nodes[i]->get_id()]) {
 						cnt_of_inner_node++;
-					//}
-					//if (cnt_of_inner_node > 1) break;
-				//}
+					}
+					if (cnt_of_inner_node > 1) break;
+				}
 
 				////openvetex是评价指标
-				//if (cnt_of_inner_node > 1) { //边图成环
-				//	struct_score = 0.3;
+				if (cnt_of_inner_node > 1) { //边图成环
+					struct_score = 0.1;
 
-				//}
-				//else {
-				//	struct_score = 0;
-				//}
-				struct_score = 0;
+				}
+				else {
+					struct_score = 0;
+				}
+				//struct_score = 0;
 				//struct_score = (double)rand() / RAND_MAX *0.3;
 				double score = k_score + s_score + struct_score;
 				//选择得分最高的
@@ -195,6 +198,7 @@ public:
 
 			is_satisfied = add_node_to_cloakset(pu, it_maximal_score->first, cloak_set, candidate_map);
 			candidate_map.erase(it_maximal_score);
+			is_node_candidate[it_maximal_score->first->get_id()] = false;
 
 		}//end for
 		if (is_satisfied) { //成功
@@ -214,12 +218,12 @@ public:
 		//更新匿名集和候选集
 		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
 		cloak_set.push_back(new_node);
-		//cloak_set.insert(new_node);
+		is_node_selecteds[new_node->get_id()] = true;
 		Node *pn1, *pn2;
 		vector<EC_Node*> &adj_nodes = new_node->get_adj_nodes(); //只影响刚加入的部分
 
 		for (int i = 0; i < adj_nodes.size(); i++) {
-			if (candidate_map.find(adj_nodes[i]) == candidate_map.end() && !vector_find(cloak_set,adj_nodes[i])) { //加入候选集
+			if (!is_node_candidate[adj_nodes[i]->get_id()] && !is_node_selecteds[adj_nodes[i]->get_id()]) { //加入候选集
 				double candidate_edge_svalue = 0.0, candidate_edge_pop = 0.0;
 				const vector<Poi*> &e_pois = adj_nodes[i]->get_pois();
 				for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
@@ -228,13 +232,14 @@ public:
 					candidate_edge_pop += e_pois[j]->get_pop();
 				}
 				candidate_map[adj_nodes[i]] = make_pair(candidate_edge_svalue, candidate_edge_pop);
+				is_node_candidate[adj_nodes[i]->get_id()] = true;
 			}
 		}
 		//计算当前状态
 		k += new_node->get_users().size();
 		l++;
 		double candidate_svalue = 0.0, candidate_pop = 0.0;
-		if (candidate_map.find(new_node) == candidate_map.end()) { //第一次执行
+		if (!is_node_candidate[new_node->get_id()]) { //第一次执行
 			const vector<Poi*> &e_pois = new_node->get_pois();
 			for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 				int poi_type = (int)e_pois[j]->get_type();
@@ -243,8 +248,8 @@ public:
 			}
 		}
 		else {
-			candidate_svalue = candidate_map.find(new_node)->second.first;
-			candidate_pop = candidate_map.find(new_node)->second.second;
+			candidate_svalue = candidate_map[new_node].first;
+			candidate_pop = candidate_map[new_node].second;
 		}
 		accumulate_svalue += candidate_svalue;
 		accumulate_pop += candidate_pop;
@@ -254,6 +259,8 @@ public:
 private:
 	//每个匿名用户
 	int k, l;
+	bool *is_node_selecteds; //hash set插入速度好慢
+	bool *is_node_candidate; 
 	double accumulate_svalue, accumulate_pop;
 	//统计信息
 	vector<bool> is_success;

@@ -10,11 +10,12 @@ class Edge;
 
 class Node{
 public:
-    Node(long long id,double x,double y)
+    Node(int index,long long id,double x,double y)
     {
         this->id = id;
         this->x = x;
         this->y = y;
+		this->index = index;
         numOfEdges = 0;
     }
     void addEdge(Edge *ep)
@@ -22,6 +23,10 @@ public:
         edges.push_back(ep);
         numOfEdges++;
     }
+	int getIndex()
+	{
+		return index;
+	}
     long long getId()
     {
         return id;
@@ -39,6 +44,7 @@ public:
         return edges;
     }
 private:
+	int index; //ÓÃÓÚ·½±ãhash
     long long id;
     double x,y;
     int numOfEdges;

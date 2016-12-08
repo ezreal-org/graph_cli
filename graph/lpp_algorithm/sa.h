@@ -33,7 +33,7 @@ public:
 		anonymization_time_total = 0;
 		cnt_of_failure = 0;
 		cnt_of_success = 0;
-		l_max = 100;
+		l_max = 30;
 		//打印当前地图状态
 	}
 	//保护算法
@@ -42,6 +42,9 @@ public:
 		vector<Edge*> edges = p_graph->getEdges();
 		LBS_User *pu = nullptr;
 		clock_t start, finish;
+		is_edge_selected = new bool[edges.size()];
+		is_edge_candidate = new bool[edges.size()];
+		is_inner_node = new bool[p_graph->getNodes().size()];
 		start = clock();
 		for (int i = 0; i < edges.size(); i++) {
 			for (int j = 0; j < edges[i]->get_users().size(); j++) {
@@ -52,6 +55,10 @@ public:
 
 		}
 		finish = clock();
+
+		delete[]is_edge_candidate;
+		delete[]is_edge_selected;
+		delete[]is_inner_node;
 		double time_cost = (double)(finish - start) / CLOCKS_PER_SEC;
 		cout << "total time consume:" << time_cost << endl;
 		cout << "success:" << cnt_of_success << endl;
@@ -62,18 +69,33 @@ public:
 		cout << "calculate open vetex begin:" << endl;
 		set<Node*> node_set;
 		set<Node*>::iterator it_node_set;
-		vector<Edge*> adj_edges,cloak_set;
+		vector<Edge*> adj_edges, cloak_set;
 		vector<Edge*>::iterator it_cloak_set;
-		Node *pn1, *pn2;
-		int all_openvetex_cnt = 0,all_edge_size=0;
+		int all_openvetex_cnt = 0, all_edge_size = 0;
 
 		int user_cnt = vv_cloak_sets.size();
 		for (int i = 0; i < vv_cloak_sets.size(); i++) {
-			node_set = vs_inner_nodes[i]; //对应相关顶点集
-			cloak_set = vv_cloak_sets[i]; //匿名集
+			cloak_set.clear();
+			for (int j = 0; j<vv_cloak_sets[i].size(); j++) {
+				cloak_set.push_back(vv_cloak_sets[i][j]);
+			}
+			node_set.clear();
+			//init inner_node set
+			for (int j = 0; j < cloak_set.size(); j++) {
+				Node *pn1, *pn2;
+				pn1 = cloak_set[j]->getNode1();
+				pn2 = cloak_set[j]->getNode2();
+				if (node_set.find(pn1) == node_set.end()) {
+					node_set.insert(pn1);
+				}
+				if (node_set.find(pn2) == node_set.end()) {
+					node_set.insert(pn2);
+				}
+			}
 			all_edge_size += cloak_set.size();
-			int cnt_of_circle=0,cnt_of_openvetex=0;
-			for (it_node_set = node_set.begin(); it_node_set!=node_set.end(); it_node_set++) {
+			int cnt_of_circle = 0, cnt_of_openvetex = 0;
+
+			for (it_node_set = node_set.begin(); it_node_set != node_set.end(); it_node_set++) {
 				adj_edges = (*it_node_set)->getAdjEdges();
 				for (int j = 0; j < adj_edges.size(); j++) { //判断所有临近边是否都在匿名集
 					if (!vector_find(cloak_set, adj_edges[j])) { //没找到,还计算有多少在？
@@ -82,6 +104,7 @@ public:
 					}
 				}
 			}
+
 			open_vetex_cnt.push_back(cnt_of_openvetex);
 			all_openvetex_cnt += cnt_of_openvetex;
 			//cout << "open vetex: "<< cnt_of_openvetex << endl;
@@ -103,11 +126,13 @@ public:
 		bool is_satisfied = false;
 		k = 0, l = 0;
 		accumulate_svalue = 0, accumulate_pop = 0;
+		memset(is_edge_candidate, false, p_graph->getEdges().size());
+		memset(is_edge_selected, false, p_graph->getEdges().size());
+		memset(is_inner_node, false, p_graph->getNodes().size());
 		vector<Edge*> cloak_set;
 		map<Edge*, pair<double,double>> candidate_map;
-		set<Node*> inner_node_set;
 		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
-		is_satisfied = add_edge_to_cloakset(pu, pe, cloak_set, candidate_map, inner_node_set);
+		is_satisfied = add_edge_to_cloakset(pu, pe, cloak_set, candidate_map);
 		for (int i = 1; i < l_max && !is_satisfied; i++) {
 			map<Edge*, pair<double,double>>::iterator it_candidate, it_minimal_svalue;
 			double minimal_svalue = 0x7fffffff;
@@ -129,12 +154,14 @@ public:
 				}
 			}
 			if (it_candidate != candidate_map.end()) { //找到非敏感poi
-				is_satisfied = add_edge_to_cloakset(pu, it_candidate->first, cloak_set, candidate_map, inner_node_set);
+				is_satisfied = add_edge_to_cloakset(pu, it_candidate->first, cloak_set, candidate_map);
 				candidate_map.erase(it_candidate);
+				is_edge_candidate[it_candidate->first->getId()] = false;
 			}
 			else {
-				is_satisfied = add_edge_to_cloakset(pu, it_minimal_svalue->first, cloak_set, candidate_map, inner_node_set);
+				is_satisfied = add_edge_to_cloakset(pu, it_minimal_svalue->first, cloak_set, candidate_map);
 				candidate_map.erase(it_minimal_svalue);
+				is_edge_candidate[it_minimal_svalue->first->getId()] = false;
 			}
 		}//end for
 		if (is_satisfied) { //成功
@@ -146,24 +173,24 @@ public:
 			cnt_of_failure++;
 		}
 		vv_cloak_sets.push_back(cloak_set);
-		vs_inner_nodes.push_back(inner_node_set);
 	}
 
 
-	bool add_edge_to_cloakset(LBS_User *&pu, Edge *new_edge,vector<Edge*> &cloak_set, map<Edge*, pair<double,double>> &candidate_map, set<Node*> &inner_node_set)
+	bool add_edge_to_cloakset(LBS_User *&pu, Edge *new_edge,vector<Edge*> &cloak_set, map<Edge*, pair<double,double>> &candidate_map)
 	{
 		//更新匿名集和候选集
 		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
 		cloak_set.push_back(new_edge);
+		is_edge_selected[new_edge->getId()] = true;
 		Node *pn1, *pn2;
 		pn1 = new_edge->getNode1(); //加入一条边,增加一个新顶点或者不变
 		pn2 = new_edge->getNode2(); //只影响刚加入的部分
-		if (inner_node_set.find(pn1) == inner_node_set.end()) {
-			inner_node_set.insert(pn1);
-			vector<Edge*> &adj_edges = pn1->getAdjEdges();
-			for (int i = 0; i < adj_edges.size(); i++) { //计算邻居边对该用户的敏感情况
-				Edge *candidate_edge = adj_edges[i];
-				if (candidate_edge != new_edge) {
+		if (!is_inner_node[pn1->getIndex()]) {
+			is_inner_node[pn1->getIndex()] = true;
+			vector<Edge*> &adj_edges1 = pn1->getAdjEdges();
+			for (int i = 0; i < adj_edges1.size(); i++) { //计算邻居边对该用户的敏感情况
+				Edge *candidate_edge = adj_edges1[i];
+				if (!is_edge_candidate[candidate_edge->getId()] && !is_edge_selected[candidate_edge->getId()]) {
 					double candidate_edge_svalue = 0.0, candidate_edge_pop = 0.0;
 					const vector<Poi*> &e_pois = candidate_edge->get_pois();
 					for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
@@ -172,15 +199,16 @@ public:
 						candidate_edge_pop += e_pois[j]->get_pop();
 					}
 					candidate_map[candidate_edge] = make_pair(candidate_edge_svalue, candidate_edge_pop); // 用于判断敏感率 < θ
+					is_edge_candidate[candidate_edge->getId()] = true;
 				}
 			}
 		}
-		if (inner_node_set.find(pn2) == inner_node_set.end()) {
-			inner_node_set.insert(pn2);
-			vector<Edge*> &adj_edges = pn2->getAdjEdges();
-			for (int i = 0; i < adj_edges.size(); i++) {
-				Edge *candidate_edge = adj_edges[i];
-				if (candidate_edge != new_edge) {
+		if (!is_inner_node[pn2->getIndex()]) {
+			is_inner_node[pn2->getIndex()] = true;
+			vector<Edge*> &adj_edges2 = pn2->getAdjEdges();
+			for (int i = 0; i < adj_edges2.size(); i++) { //计算邻居边对该用户的敏感情况
+				Edge *candidate_edge = adj_edges2[i];
+				if (!is_edge_candidate[candidate_edge->getId()] && !is_edge_selected[candidate_edge->getId()]) {
 					double candidate_edge_svalue = 0.0, candidate_edge_pop = 0.0;
 					const vector<Poi*> &e_pois = candidate_edge->get_pois();
 					for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
@@ -188,15 +216,18 @@ public:
 						candidate_edge_svalue += (sensitive_vals[poi_type] * e_pois[j]->get_pop());
 						candidate_edge_pop += e_pois[j]->get_pop();
 					}
-					candidate_map[candidate_edge] = make_pair(candidate_edge_svalue, candidate_edge_pop);
+					candidate_map[candidate_edge] = make_pair(candidate_edge_svalue, candidate_edge_pop); // 用于判断敏感率 < θ
+					is_edge_candidate[candidate_edge->getId()] = true;
 				}
 			}
 		}
+		
+
 		//计算当前状态
 		k += new_edge->get_users().size();
 		l++;
 		double candidate_svalue = 0.0, candidate_pop = 0.0;
-		if (candidate_map.find(new_edge) == candidate_map.end()) { //第一次执行
+		if (!is_edge_candidate[new_edge->getId()]) { //第一次执行
 			const vector<Poi*> &e_pois = new_edge->get_pois();
 			for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 				int poi_type = (int)e_pois[j]->get_type();
@@ -205,8 +236,8 @@ public:
 			}
 		}
 		else {
-			candidate_svalue = candidate_map.find(new_edge)->second.first;
-			candidate_pop = candidate_map.find(new_edge)->second.second;
+			candidate_svalue = candidate_map[new_edge].first;
+			candidate_pop = candidate_map[new_edge].second;
 		}
 		accumulate_svalue += candidate_svalue;
 		accumulate_pop += candidate_pop;
@@ -217,10 +248,13 @@ public:
 private:
 	int k, l;
 	double accumulate_svalue = 0, accumulate_pop = 0;
+	bool *is_edge_selected; //hash set插入速度好慢
+	bool *is_edge_candidate;
+	bool *is_inner_node;
+
 	vector<bool> is_success;
 	vector<LBS_User*> users;
 	vector<vector<Edge*>> vv_cloak_sets;
-	vector<set<Node*>> vs_inner_nodes;
 	//统计信息
 	double anonymization_time_total;
 	int cnt_of_success;

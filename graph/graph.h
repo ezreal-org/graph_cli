@@ -31,6 +31,7 @@ public:
             cout << "file open failure" << endl;
             return;
         }
+		int node_index = 0;
         while(!f_nodes.eof()){
             //oldenburgGen map data have a end_char each line.
             f_nodes >> node_id >> x >> y >> end_char;
@@ -46,10 +47,10 @@ public:
 			if (y > y_max) {
 				y_max = y;
 			}
-				     
-            pNode = new Node(node_id,x,y);
+            pNode = new Node(node_index,node_id,x,y);
             nodes.push_back(pNode);
             nodes_map[node_id] = pNode;
+			node_index++;
             //++numOfNodes;
 			//cout << "node:"<<pNode->getId() << endl;
         }
@@ -66,6 +67,7 @@ public:
             cout << "file open failure" << endl;
             return;
         }
+		int edge_id = 0;
         while(!f_edges.eof()){
             f_edges >> e_id >> node1_id  >> node2_id >> edge_class >>  end_char;
             pNode1 = getNode(node1_id);
@@ -76,7 +78,7 @@ public:
             x2 = pNode2->getX();
             y2 = pNode2->getY();
             edge_len = sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
-            pEdge = new Edge(e_id,pNode1,pNode2,edge_class,edge_len);
+            pEdge = new Edge(edge_id++,pNode1,pNode2,edge_class,edge_len);
             pNode1->addEdge(pEdge);
             pNode2->addEdge(pEdge);
             edges.push_back(pEdge);
@@ -137,24 +139,24 @@ public:
 	void add_pois(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges)
 	{
 		//添加学校
-		add_poi_operate(164, Semantic_type::school, generator,vv_edges);
+		add_poi_operate(264, Semantic_type::school, generator,vv_edges);
 		//添加医院
-		add_poi_operate(172, Semantic_type::hospital, generator, vv_edges);
+		add_poi_operate(272, Semantic_type::hospital, generator, vv_edges);
 		//添加商场
-		add_poi_operate(172, Semantic_type::market, generator, vv_edges);
+		add_poi_operate(272, Semantic_type::market, generator, vv_edges);
 		//添加bar
-		add_poi_operate(200, Semantic_type::bar, generator, vv_edges);
+		add_poi_operate(300, Semantic_type::bar, generator, vv_edges);
 		//添加住宅区
-		add_poi_operate(232, Semantic_type::residence, generator, vv_edges);
+		add_poi_operate(332, Semantic_type::residence, generator, vv_edges);
 		//添加公司
-		add_poi_operate(158, Semantic_type::company, generator, vv_edges);
+		add_poi_operate(258, Semantic_type::company, generator, vv_edges);
 	}
     //添加用户
 	void add_users(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges)
 	{
 		//定义几类用户偏好的模板
-		vector<double> u_type1 = { 0.1,0.9,0.2,0.3,0.1,0.1 }; // 医院敏感
-		vector<double> u_type2 = { 0.1,0.1,0.1,0.9,0.1,0.1 };
+		vector<double> u_type1 = { 0.4,0.9,0.2,0.8,0.1,0.3 }; // 医院敏感
+		vector<double> u_type2 = { 0.1,0.4,0.1,0.9,0.1,0.4 };
 		vector<double> u_type3 = { 0.2,0.1,0.1,0.2,0.2,0.8 };
 		vector<double> u_type4 = { 0.8,0.2,0.4,0.1,0.2,0.1 };
 
@@ -165,8 +167,8 @@ public:
 
 		add_user_operate(6000, u_type1, generator, vv_edges);
 		add_user_operate(4000, u_type2, generator, vv_edges);
-		add_user_operate(3000,  u_type3, generator, vv_edges);
-		add_user_operate(1000, u_type1, generator, vv_edges);
+		//add_user_operate(3000,  u_type3, generator, vv_edges);
+		//add_user_operate(1000, u_type1, generator, vv_edges);
 	}
 	void add_poi_operate(int cnt, Semantic_type s_type, WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges)
 	{
@@ -193,9 +195,9 @@ public:
 		LBS_User *pu = nullptr;
 		for (int i = 0; i < add_user_cnt; i++) {
 			//double s_require = 0.2 + ((double)generator->get_next_r() / generator->get_random_max()) * (0.8-0.2); // 0.2~0.8
-			double s_require = 0.2;
+			double s_require = 0.5;
 			long long u_id = users.size() + 1;
-			pu = new LBS_User(u_id, 10, 10, s_require, u_profile);
+			pu = new LBS_User(u_id, 20, 10, s_require, u_profile);
 			//先随机挑选一个等级,这个过程将考虑路段权值
 			int edge_class = generator->get_next_wr();
 			// 再从某类中随机挑一个

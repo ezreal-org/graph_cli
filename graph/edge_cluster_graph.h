@@ -21,13 +21,16 @@ public:
 		Node *p_node1, *p_node2;
 		vector<Edge*> src_edges = p_graph->getEdges();
 		size_t src_edge_size = src_edges.size();
+		int node_id = 0;
         for(int i=0;i<src_edge_size;i++){
 			Edge *p = src_edges[i];
 			p_node1 = p->getNode1();
 			p_node2 = p->getNode2();
 			ec_node_x = (p_node1->getX() + p_node2->getX()) / 2;
 			ec_node_y = (p_node1->getY() + p_node2->getY()) / 2;
-			EC_Node *pNode = new EC_Node(p->getId(),p,ec_node_x,ec_node_y,p->get_users(),p->get_pois());
+			//边图中顶点的id改为从0~x 以用于快速hash
+			//EC_Node *pNode = new EC_Node(p->getId(),p,ec_node_x,ec_node_y,p->get_users(),p->get_pois());
+			EC_Node *pNode = new EC_Node(node_id++, p, ec_node_x, ec_node_y, p->get_users(), p->get_pois());
             nodes.push_back(pNode);
             nodes_map[p->getId()] = pNode;
         }

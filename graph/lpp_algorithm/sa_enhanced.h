@@ -91,7 +91,7 @@ public:
 
 	}
 	//为每个用户
-	void sa(LBS_User *&pu,  Edge *pe)
+	void sa(LBS_User *&pu, Edge *pe)
 	{
 		bool is_satisfied = false;
 		k = 0, l = 0;
@@ -133,7 +133,7 @@ public:
 	}
 
 
-	bool add_edge_to_cloakset(LBS_User *&pu, Edge *new_edge,vector<Edge*> &cloak_set, map<Edge*, pair<double, double>> &candidate_map, set<Node*> &inner_node_set)
+	bool add_edge_to_cloakset(LBS_User *&pu, Edge *new_edge, vector<Edge*> &cloak_set, map<Edge*, pair<double, double>> &candidate_map, set<Node*>&inner_node_set)
 	{
 		//更新匿名集和候选集
 		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
@@ -146,7 +146,7 @@ public:
 			vector<Edge*> &adj_edges = pn1->getAdjEdges();
 			for (int i = 0; i < adj_edges.size(); i++) { //计算邻居边对该用户的敏感情况
 				Edge *candidate_edge = adj_edges[i];
-				if (candidate_edge != new_edge) {
+				if (candidate_map.find(candidate_edge) == candidate_map.end()) { //候选集中不存在
 					double candidate_edge_svalue = 0.0, candidate_edge_pop = 0.0;
 					const vector<Poi*> &e_pois = candidate_edge->get_pois();
 					for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
@@ -163,7 +163,7 @@ public:
 			vector<Edge*> &adj_edges = pn2->getAdjEdges();
 			for (int i = 0; i < adj_edges.size(); i++) {
 				Edge *candidate_edge = adj_edges[i];
-				if (candidate_edge != new_edge) {
+				if (candidate_map.find(candidate_edge) == candidate_map.end()) {
 					double candidate_edge_svalue = 0.0, candidate_edge_pop = 0.0;
 					const vector<Poi*> &e_pois = candidate_edge->get_pois();
 					for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
@@ -200,6 +200,7 @@ public:
 private:
 	int k, l;
 	double accumulate_svalue = 0, accumulate_pop = 0;
+	bool *is_node_selecteds; //hash set插入速度好慢
 	vector<bool> is_success;
 	vector<LBS_User*> users;
 	vector<vector<Edge*>> vv_cloak_sets;
