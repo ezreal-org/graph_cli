@@ -117,12 +117,6 @@ public:
 	//为每个用户
 	void sa(LBS_User *&pu, Edge *&pe)
 	{
-		/*cout << "user:" << pu->get_k() << " " << pu->get_l() << " " << pu->get_s() << endl;
-		cout << "profile:";
-		for (int kk = 0; kk < pu->get_sensitive_vals().size(); kk++) {
-			cout << pu->get_sensitive_vals()[kk] << " ";
-		}
-		cout << endl;*/
 		bool is_satisfied = false;
 		k = 0, l = 0;
 		accumulate_svalue = 0, accumulate_pop = 0;

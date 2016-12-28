@@ -108,12 +108,6 @@
     <Text Include="map_data\sanfrancisco_node.txt">
       <Filter>map_data</Filter>
     </Text>
-    <Text Include="map_data\Tgr06077-1_edge.txt">
-      <Filter>map_data</Filter>
-    </Text>
-    <Text Include="map_data\Tgr06077-1_node.txt">
-      <Filter>map_data</Filter>
-    </Text>
     <Text Include="lpp_algorithm\out1.txt">
       <Filter>algorithm</Filter>
     </Text>

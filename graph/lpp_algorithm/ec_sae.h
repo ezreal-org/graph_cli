@@ -121,7 +121,7 @@ public:
 		accumulate_svalue = 0.0;
 		memset(is_node_selecteds, false, p_graph->get_nodes().size());
 		memset(is_node_candidate, false, p_graph->get_nodes().size());
-		double w1 = 2, w2 = 1; // w2调节结构的重要程度
+		double w2 = 0; // w2调节结构的重要程度，匿名服务器设置，会有参数讨论
 		bool is_satisfied = false;
 		double accumulate_svalue = 0, accumulate_pop = 0;
 		vector<EC_Node*> cloak_set;
@@ -133,13 +133,7 @@ public:
 			map<EC_Node*, pair<double, double>>::iterator it_candidate, it_maximal_score;
 			double k_score = 0, s_score = 0, struct_score = 0;
 			if (candidate_map.size() < 1) break;
-			if (accumulate_pop > 0.001 && accumulate_svalue / accumulate_pop > pu->get_s()) { //调节语义和k的重要程度
-				w1 = 2;  //语义未满足
-			}
-			else {
-				w1 = 1;
-			}
-			double minimal_miss_s = 0x7fffffff, maximal_miss_s = 0, maximal_score = 0;
+			double minimal_miss_s = numeric_limits<double>::max(), maximal_miss_s = numeric_limits<double>::min(), maximal_score = 0;
 			//--
 			for (it_candidate = candidate_map.begin(); it_candidate != candidate_map.end(); it_candidate++) { //已经计算了的就不用计算
 				double candidate_svalue = it_candidate->second.first;
@@ -164,7 +158,7 @@ public:
 					double candidate_svalue = it_candidate->second.first;
 					double candidate_pop = it_candidate->second.second;
 					double missed_value = candidate_svalue / pu->get_s() - candidate_pop;
-					s_score = w1 * (maximal_miss_s - missed_value) / (maximal_miss_s - minimal_miss_s);
+					s_score = (maximal_miss_s - missed_value) / (maximal_miss_s - minimal_miss_s);
 				}
 				//struct
 				vector<EC_Node*> &this_adj_nodes = it_candidate->first->get_adj_nodes();
@@ -180,7 +174,7 @@ public:
 
 				////openvetex是评价指标
 				if (cnt_of_inner_node > 1) { //边图成环
-					struct_score = 0.1;
+					struct_score = 1;
 
 				}
 				else {
@@ -188,7 +182,7 @@ public:
 				}
 				//struct_score = 0;
 				//struct_score = (double)rand() / RAND_MAX *0.3;
-				double score = k_score + s_score + struct_score;
+				double score = (1 - w2) *k_score * s_score + w2*struct_score;
 				//选择得分最高的
 				if (score > maximal_score) {
 					maximal_score = score;

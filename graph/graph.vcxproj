@@ -174,8 +174,6 @@
     <Text Include="map_data\oldenburgGen_node.txt" />
     <Text Include="map_data\sanfrancisco_edge.txt" />
     <Text Include="map_data\sanfrancisco_node.txt" />
-    <Text Include="map_data\Tgr06077-1_edge.txt" />
-    <Text Include="map_data\Tgr06077-1_node.txt" />
     <Text Include="memos\experiment_setting.txt" />
     <Text Include="memos\map_info.txt" />
   </ItemGroup>
