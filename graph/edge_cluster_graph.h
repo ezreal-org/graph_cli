@@ -11,10 +11,10 @@
 
 class EC_Graph{
 public:
-    EC_Graph(ifstream &f_nodes,ifstream &f_edges)
+    EC_Graph(ifstream &f_nodes,ifstream &f_edges,string config_file)
     {
         cnt_of_ec_edges = 0; // 用于自增表示边图中的各边
-        p_graph = new Graph(f_nodes,f_edges);
+        p_graph = new Graph(f_nodes,f_edges,config_file);
         //为每条边生成边图顶点
         cout << p_graph->getEdges().size() << " src_graph edges !!" << endl;
 		double ec_node_x, ec_node_y;

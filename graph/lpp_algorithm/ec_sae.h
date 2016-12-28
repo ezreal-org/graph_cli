@@ -121,7 +121,7 @@ public:
 		accumulate_svalue = 0.0;
 		memset(is_node_selecteds, false, p_graph->get_nodes().size());
 		memset(is_node_candidate, false, p_graph->get_nodes().size());
-		double w2 = 0; // w2调节结构的重要程度，匿名服务器设置，会有参数讨论
+		double w2 = 0.06; // w2调节结构的重要程度，匿名服务器设置，会有参数讨论
 		bool is_satisfied = false;
 		double accumulate_svalue = 0, accumulate_pop = 0;
 		vector<EC_Node*> cloak_set;

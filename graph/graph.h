@@ -12,11 +12,12 @@
 #include "graph_node.h"
 #include "graph_edge.h"
 #include "random_generator.h"
+#include "util.h"
 
 using namespace std;
 class Graph{
 public:
-    Graph(ifstream &f_nodes,ifstream &f_edges)
+    Graph(ifstream &f_nodes,ifstream &f_edges,string config_path)
     {
         Node *pNode;
         Edge *pEdge;
@@ -89,8 +90,8 @@ public:
 
 		vector<vector<Edge*>> vv_edges(7); //记录每个类别的各边
 		WRandom_Generator *p_generator = init_weighted_random_generator(vv_edges);
-		add_pois(p_generator,vv_edges); //添加兴趣点
-		add_users(p_generator,vv_edges); //添加用户
+		add_pois(p_generator,vv_edges,config_path); //添加兴趣点
+		add_users(p_generator,vv_edges,config_path); //添加用户
 		delete(p_generator);
         cout << "graph init done" << endl;
     }
@@ -136,39 +137,43 @@ public:
 	/*
 	 *  添加语义信息及用户信息，这会使用基于路段权重的生成器
 	 */
-	void add_pois(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges)
+	void add_pois(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges,string config_path)
 	{
-		//添加学校
-		add_poi_operate(1840, Semantic_type::school, generator,vv_edges);
-		//添加医院
-		add_poi_operate(2102, Semantic_type::hospital, generator, vv_edges);
-		//添加商场
-		add_poi_operate(2120, Semantic_type::market, generator, vv_edges);
-		//添加bar
-		add_poi_operate(3000, Semantic_type::bar, generator, vv_edges);
-		//添加住宅区
-		add_poi_operate(3032, Semantic_type::residence, generator, vv_edges);
-		//添加公司
-		add_poi_operate(1580, Semantic_type::company, generator, vv_edges);
+		Graph_Config gc(config_path);
+		map<string, int> pois_to_add = gc.parse_pois_section();
+		map<string, int>::iterator it_pois;
+		for (it_pois = pois_to_add.begin(); it_pois != pois_to_add.end(); it_pois++) {
+			Semantic_type st;
+			if (it_pois->first == "school") {
+				st = Semantic_type::school;
+			}
+			else if (it_pois->first == "hospital") {
+				st = Semantic_type::hospital;
+			}
+			else if (it_pois->first == "bar") {
+				st = Semantic_type::bar;
+			}
+			else if (it_pois->first == "company") {
+				st = Semantic_type::company;
+			}
+			else if (it_pois->first == "market") {
+				st = Semantic_type::market;
+			}
+			else if (it_pois->first == "residence") {
+				st = Semantic_type::residence;
+			}
+			add_poi_operate(it_pois->second, st, generator, vv_edges);
+		}
 	}
     //添加用户
-	void add_users(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges)
+	void add_users(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges,string config_path)
 	{
-		//定义几类用户偏好的模板
-		vector<double> u_type1 = { 0.2,0.3,0.4,0.9,0.1,0.1 }; // 医院敏感
-		vector<double> u_type2 = { 0.1,0.1,0.9,0.9,0.4,0.4 };
-		vector<double> u_type3 = { 0.1,0.1,0.3,0.4,0.4,0.8 };
-		vector<double> u_type4 = { 0.9,0.4,0.4,0.1,0.4,0.1 };
-
-		/*vector<double> u_type1 = { 1,1,1,1,1,1 };
-		vector<double> u_type2 = { 1,1,1,1,1,1 };
-		vector<double> u_type3 = { 1,1,1,1,1,1 };
-		vector<double> u_type4 = { 1,1,1,1,1,1 };*/
-
-		add_user_operate(300000, u_type1, generator, vv_edges);
-		//add_user_operate(120000, u_type2, generator, vv_edges);
-		//add_user_operate(3000,  u_type3, generator, vv_edges);
-		//add_user_operate(1000, u_type1, generator, vv_edges);
+		Graph_Config gc(config_path);
+		map<string, pair<vector<double>, int>> users_to_add = gc.parse_user_section();
+		map<string, pair<vector<double>, int>>::iterator it_add_users;
+		for (it_add_users = users_to_add.begin(); it_add_users != users_to_add.end(); it_add_users++) {
+			add_user_operate(it_add_users->second.second, it_add_users->second.first, generator, vv_edges);
+		}
 	}
 	void add_poi_operate(int cnt, Semantic_type s_type, WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges)
 	{
@@ -197,7 +202,7 @@ public:
 			//double s_require = 0.2 + ((double)generator->get_next_r() / generator->get_random_max()) * (0.8-0.2); // 0.2~0.8
 			double s_require = 0.2;
 			long long u_id = users.size() + 1;
-			pu = new LBS_User(u_id, 10, 5, s_require, u_profile);
+			pu = new LBS_User(u_id, 20, 5, s_require, u_profile);
 			//先随机挑选一个等级,这个过程将考虑路段权值
 			int edge_class = generator->get_next_wr();
 			// 再从某类中随机挑一个

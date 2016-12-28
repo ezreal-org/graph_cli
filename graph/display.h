@@ -413,13 +413,16 @@ private: System::Void button8_Click(System::Object^  sender, System::EventArgs^ 
 
 private: System::Void comboBox1_SelectedIndexChanged(System::Object^  sender, System::EventArgs^  e) {
 	ifstream if_nodes, if_edges;
+	string config_path = "";
 	if (this->comboBox1->SelectedIndex == 0) {
 		if_nodes.open("map_data\\oldenburgGen_node.txt");
 		if_edges.open("map_data\\oldenburgGen_edge.txt");
+		config_path = "map_data\\graph_config_oldenburgGen.txt";
 	}
 	else if (this->comboBox1->SelectedIndex == 1) {
 		if_nodes.open("map_data\\sanfrancisco_node.txt");
 		if_edges.open("map_data\\sanfrancisco_edge.txt");
+		config_path = "map_data\\graph_config_sanfrancisco.txt";
 	}
 	this->button1->Text = "等待";
 	this->button2->Text = "等待";
@@ -428,7 +431,7 @@ private: System::Void comboBox1_SelectedIndexChanged(System::Object^  sender, Sy
 	if (this->p_graph != nullptr) {
 		delete(this->p_graph);
 	}
-	EC_Graph *p_graph = new EC_Graph(if_nodes, if_edges);
+	EC_Graph *p_graph = new EC_Graph(if_nodes, if_edges,config_path);
 	this->p_graph = p_graph;
 	this->button1->Text = "绘制原图";
 	this->button2->Text = "绘边簇图";

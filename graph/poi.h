@@ -4,7 +4,7 @@
 #ifndef POI_SEMANTIC_H
 #define POI_SEMANTIC_H
 
-const int semantic_type_cnt = 4;
+const int semantic_type_cnt = 6;
 enum Semantic_type
 {
 	school = 0,
