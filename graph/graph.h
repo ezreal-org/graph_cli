@@ -139,30 +139,18 @@ public:
 	 */
 	void add_pois(WRandom_Generator *&generator, const vector<vector<Edge*>> &vv_edges,string config_path)
 	{
+		string str_array[] = {"school","hospital","bar","company","market","residence"};
+		Semantic_type st_array[] = { Semantic_type::school,Semantic_type::hospital,Semantic_type::bar,Semantic_type::company,Semantic_type::market,Semantic_type::residence };
+		map<string, Semantic_type> map_str2st;
+		const int st_size = 6;
+		for (int i = 0; i < st_size; i++) {
+			map_str2st[str_array[i]] = st_array[i];
+		}
 		Graph_Config gc(config_path);
 		map<string, int> pois_to_add = gc.parse_pois_section();
 		map<string, int>::iterator it_pois;
 		for (it_pois = pois_to_add.begin(); it_pois != pois_to_add.end(); it_pois++) {
-			Semantic_type st;
-			if (it_pois->first == "school") {
-				st = Semantic_type::school;
-			}
-			else if (it_pois->first == "hospital") {
-				st = Semantic_type::hospital;
-			}
-			else if (it_pois->first == "bar") {
-				st = Semantic_type::bar;
-			}
-			else if (it_pois->first == "company") {
-				st = Semantic_type::company;
-			}
-			else if (it_pois->first == "market") {
-				st = Semantic_type::market;
-			}
-			else if (it_pois->first == "residence") {
-				st = Semantic_type::residence;
-			}
-			add_poi_operate(it_pois->second, st, generator, vv_edges);
+			add_poi_operate(it_pois->second, map_str2st[it_pois->first], generator, vv_edges);
 		}
 	}
     //添加用户
@@ -200,9 +188,9 @@ public:
 		LBS_User *pu = nullptr;
 		for (int i = 0; i < add_user_cnt; i++) {
 			//double s_require = 0.2 + ((double)generator->get_next_r() / generator->get_random_max()) * (0.8-0.2); // 0.2~0.8
-			double s_require = 0.2;
+			double s_require = 0.4;
 			long long u_id = users.size() + 1;
-			pu = new LBS_User(u_id, 20, 5, s_require, u_profile);
+			pu = new LBS_User(u_id, 5, 5, s_require, u_profile);
 			//先随机挑选一个等级,这个过程将考虑路段权值
 			int edge_class = generator->get_next_wr();
 			// 再从某类中随机挑一个

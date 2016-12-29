@@ -458,7 +458,8 @@ private: System::Void button10_Click(System::Object^  sender, System::EventArgs^
 	//Lppa_sa *p_sa = new Lppa_sa(this->p_graph->p_graph);
 	//Lppa_sa_e *p_sa = new Lppa_sa_e(this->p_graph->p_graph);
 
-	Lppa_ecsa_e *p_sa = new Lppa_ecsa_e(this->p_graph);
+	//Lppa_ecsa_e *p_sa = new Lppa_ecsa_e(this->p_graph);
+	Lppa_plpca *p_sa = new Lppa_plpca(this->p_graph);
 	p_sa->lpp();
 	delete p_sa;
 }

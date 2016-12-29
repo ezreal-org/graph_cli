@@ -106,11 +106,11 @@ public:
 
 	void plpca(LBS_User *pu,EC_Node * const pn) //为该用户执行算法
 	{
-		map<pair<int,EC_Node*>, pair<int, EC_Node*>> pre_map; //为每个用户执行匿名算法时，记录前驱
+		map<pair<int,EC_Node*>, pair<int, EC_Node*>> pre_map; //为每个用户执行匿名算法时，记录前驱,int表示位置，EC_Node*表示某个节点
 		vector<vector<EC_Node*>> vv_circles; //得到多个环
 		vector<EC_Node*> expand_queue;
 		vector<EC_Node*> adj_nodes;
-		int lay_now,size_of_this_lay; // accumulate_expand_index 起到类似哈希的作用,同一个EC_Node它的前驱在不同层不同位置的前驱不一致
+		int lay_now,size_of_this_lay; // accumulate_expand_index 起到类似哈希的作用,同一个EC_Node它的前驱在不同层不同位置的前驱不一致;表明扩展时第几个处理到该顶点
 		int accumulate_queue_index = 0, accumulate_expand_index = 0;
 		expand_queue.push_back(pn);
 		pre_map.clear();
@@ -123,7 +123,7 @@ public:
 				EC_Node *node_now = expand_queue[accumulate_queue_index];
 				adj_nodes = node_now->get_adj_nodes();
 				for (int j = 0; j < adj_nodes.size(); j++) {
-					if (adj_nodes[j] == pn) { //找到一个环
+					if (adj_nodes[j] == pn && lay_now>1) { //找到一个环,环起码有三条边
 						EC_Node* p_node = node_now;
 						vector<EC_Node*> simple_circle;
 						simple_circle.push_back(pn);
@@ -133,13 +133,22 @@ public:
 							simple_circle.push_back(p_node_info.second);
 							p_node_info = pre_map[p_node_info];
 						}
-						
 						vv_circles.push_back(simple_circle);
 					}
-					else if(pre_map[make_pair(accumulate_queue_index,node_now)].second!=adj_nodes[j]){ //不添加前驱
-						expand_queue.push_back(adj_nodes[j]);
-						pre_map[make_pair(++accumulate_expand_index,adj_nodes[j])] = make_pair(accumulate_queue_index,node_now);
-						size_of_next_lay++;
+					else{
+						//新增的顶点，为达到环的结构，应该在广度优先的某条扩展路径上不重复
+						if (adj_nodes[j] == pn) continue; //这种为环只有两条边的情形，即通过第一层顶点就找到出发点
+						pair<int, EC_Node*> p_node_info = pre_map[make_pair(accumulate_queue_index, node_now)];
+						while (p_node_info.second != pn) { 
+							if (p_node_info.second == adj_nodes[j])
+								break;
+							p_node_info = pre_map[p_node_info];
+						}
+						if (p_node_info.second == pn) {  //路径上不重复
+							expand_queue.push_back(adj_nodes[j]);
+							pre_map[make_pair(++accumulate_expand_index, adj_nodes[j])] = make_pair(accumulate_queue_index, node_now);
+							size_of_next_lay++;
+						}
 					}
 				}
 				accumulate_queue_index++;
@@ -180,7 +189,7 @@ public:
 					accumulate_pop += e_pois[m]->get_pop();
 				}
 			}
-			if (k_value >= pu->get_k() && l_value >= pu->get_l() && (accumulate_pop >= 0.001 && accumulate_svalue / accumulate_pop <= pu->get_s())) {
+			if (k_value >= pu->get_k() && l_value >= pu->get_l() && (accumulate_pop < 0.001 || (accumulate_pop >= 0.001 && accumulate_svalue / accumulate_pop <= pu->get_s()))) {
 				vector<Edge*> v_cloak;
 				for (int j = 0; j < edge_size; j++) {
 					v_cloak.push_back(vv_circles[i][j]->get_src_edge());
