@@ -2,17 +2,21 @@
 #define LPPA_SA_H
 
 /*
-	SA算法隐私模型为 k,θ安全, 采用泰森多边形进行兴趣点划分
-	整个流程暴露的是Asuit,匿名算法在客户端执行
-	在用户扩大匿名区域的过程中,首先随机选择非敏感位置
-	再选择道路交叉点，最后选择流行度最低的敏感语义
+SA算法隐私模型为 k,θ安全, 采用泰森多边形进行兴趣点划分
+整个流程暴露的是Asuit,匿名算法在客户端执行
+当用户所在边为敏感区域时执行算法1
+当用户所在边为非敏感区域时执行算法2
 
-	算法本质为，每次加入一个临近兴趣点，直到满足隐私模型
-	不能保证l多样性
-	为了适应新的隐私目标、方便比较查询效率：
-	采用第三方进行匿名，不影响算法本质
-	每次匿名扩展时，加入一条临近边而不是一个位置
-	s_type_poi_pop/poi_pop_all >s_require 的定义为敏感语义
+算法1：加入所有邻接的非敏感语义或交叉点，但不存在非敏感语义时，加入敏感度最小的敏感语义并执行算法2
+ps: 当用户处于非敏感区域时，加入非敏感区域或交叉点都能保证匿名区域非敏感
+算法2：加入所有邻接的非敏感语义，当不存在时随机选择一个交叉点中，当交叉点不存在时，选择敏感度最小的敏感语义
+ps: 执行算法2意味着，匿名区域包含敏感兴趣点，匿名集扩展时应考虑候选集语义，`不能把非敏感语义和交叉点看的同样重要`，而加入所有交叉点
+
+不能保证l多样性
+为了适应新的隐私目标、方便比较查询效率：
+采用第三方进行匿名，不影响算法本质
+每次匿名扩展时，加入一条临近边而不是一个位置
+s_type_poi_pop/poi_pop_all >s_require 的定义为敏感语义
 */
 
 #include "../graph.h"
@@ -76,7 +80,7 @@ public:
 		int user_cnt = vv_cloak_sets.size();
 		for (int i = 0; i < vv_cloak_sets.size(); i++) {
 			cloak_set.clear();
-			for (int j = 0; j<vv_cloak_sets[i].size(); j++) {
+			for (int j = 0; j < vv_cloak_sets[i].size(); j++) {
 				cloak_set.push_back(vv_cloak_sets[i][j]);
 			}
 			node_set.clear();
@@ -117,29 +121,39 @@ public:
 	//为每个用户
 	void sa(LBS_User *&pu, Edge *&pe)
 	{
-		bool is_satisfied = false;
+		is_satisfied = false;
 		k = 0, l = 0;
 		accumulate_svalue = 0, accumulate_pop = 0;
 		memset(is_edge_candidate, false, p_graph->getEdges().size());
 		memset(is_edge_selected, false, p_graph->getEdges().size());
 		memset(is_inner_node, false, p_graph->getNodes().size());
 		vector<Edge*> cloak_set;
-		map<Edge*, pair<double,double>> candidate_map;
-		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
-		is_satisfied = add_edge_to_cloakset(pu, pe, cloak_set, candidate_map);
-		for (int i = 1; i < l_max && !is_satisfied; i++) {
-			map<Edge*, pair<double,double>>::iterator it_candidate, it_minimal_svalue;
+		map<Edge*, pair<double, double>> candidate_map;
+
+		is_satisfied = add_edge_to_cloakset(pu, pe, cloak_set, candidate_map); //初始匿名集为用户所在边
+		if (accumulate_pop<0.001 || accumulate_svalue / accumulate_pop <= pu->get_s()) { //非敏感边
+			algorithm1(pu, cloak_set, candidate_map);
+		}
+		else { //敏感边
+			algorithm2(pu, cloak_set, candidate_map);
+		}
+	}
+
+	//算法1 为非敏感边匿名
+	//加入非敏感语义或空白，不存在时加入敏感值最小的敏感语义，执行算法2
+	void algorithm1(LBS_User *&pu, vector<Edge*> &cloak_set, map<Edge*, pair<double, double>> &candidate_map)
+	{
+		for (int i = cloak_set.size(); i < l_max && !is_satisfied; i++) {
+			map<Edge*, pair<double, double>>::iterator it_candidate, it_minimal_svalue;
 			double minimal_svalue = 0x7fffffff;
 			if (candidate_map.size() < 1) break;
 			for (it_candidate = candidate_map.begin(); it_candidate != candidate_map.end(); it_candidate++) { //已经计算了的就不用计算
 				double candidate_svalue = it_candidate->second.first;
 				double candidate_pop = it_candidate->second.second;
-				if (candidate_pop < 0.0001) { //空路段,第二优先级除非敏感poi外
-					minimal_svalue = 0; //设置为最小敏感语义位置
-					it_minimal_svalue = it_candidate;
-					continue;
+				if (candidate_pop < 0.0001) { //空语义路段,算法1中直接加入
+					break;
 				}
-				if (candidate_svalue/candidate_pop <= pu->get_s()) { //选择非敏感poi
+				if (candidate_svalue / candidate_pop <= pu->get_s()) { //选择非敏感poi
 					break;
 				}
 				if (candidate_svalue < minimal_svalue) {
@@ -147,7 +161,7 @@ public:
 					it_minimal_svalue = it_candidate;
 				}
 			}
-			if (it_candidate != candidate_map.end()) { //找到非敏感poi
+			if (it_candidate != candidate_map.end()) { //找到非敏感poi或空语义路段
 				is_satisfied = add_edge_to_cloakset(pu, it_candidate->first, cloak_set, candidate_map);
 				candidate_map.erase(it_candidate);
 				is_edge_candidate[it_candidate->first->getId()] = false;
@@ -156,6 +170,7 @@ public:
 				is_satisfied = add_edge_to_cloakset(pu, it_minimal_svalue->first, cloak_set, candidate_map);
 				candidate_map.erase(it_minimal_svalue);
 				is_edge_candidate[it_minimal_svalue->first->getId()] = false;
+				return algorithm2(pu, cloak_set, candidate_map);
 			}
 		}//end for
 		if (is_satisfied) { //成功
@@ -169,8 +184,64 @@ public:
 		vv_cloak_sets.push_back(cloak_set);
 	}
 
-
-	bool add_edge_to_cloakset(LBS_User *&pu, Edge *new_edge,vector<Edge*> &cloak_set, map<Edge*, pair<double,double>> &candidate_map)
+	//算法2 为敏感边匿名
+	//加入非敏感语义，不存在时随机选择空白语义，仍然不存在时，选择敏感值最小的
+	void algorithm2(LBS_User *&pu, vector<Edge*> &cloak_set, map<Edge*, pair<double, double>> &candidate_map)
+	{
+		vector<Edge*> none_semantic_set;
+		for (int i = cloak_set.size(); i < l_max && !is_satisfied; i++) {
+			map<Edge*, pair<double, double>>::iterator it_candidate, it_minimal_svalue;
+			double minimal_svalue = 0x7fffffff;
+			if (candidate_map.size() < 1 && none_semantic_set.size()<1) break;
+			for (it_candidate = candidate_map.begin(); it_candidate != candidate_map.end(); it_candidate++) { //已经计算了的就不用计算
+				double candidate_svalue = it_candidate->second.first;
+				double candidate_pop = it_candidate->second.second;
+				if (candidate_pop < 0.0001) { //空语义边
+					none_semantic_set.push_back(it_candidate->first);
+					candidate_map.erase(it_candidate); //空路段放vector里，用于随机选择;但标识数组is_edge_candidate标识的该边仍然为true
+					continue;
+				}
+				if (candidate_svalue / candidate_pop <= pu->get_s()) { //选择非敏感poi
+					break;
+				}
+				if (candidate_svalue < minimal_svalue) {
+					minimal_svalue = candidate_svalue;
+					it_minimal_svalue = it_candidate;
+				}
+			}
+			if (it_candidate != candidate_map.end()) { //找到非敏感poi
+				is_satisfied = add_edge_to_cloakset(pu, it_candidate->first, cloak_set, candidate_map);
+				candidate_map.erase(it_candidate);
+				is_edge_candidate[it_candidate->first->getId()] = false;
+			}
+			else {
+				int ns_size = none_semantic_set.size();
+				if (ns_size > 0) { //存在空白语义位置
+					srand(time(NULL));
+					int selected_index = rand() % ns_size;
+					Edge *pnone = none_semantic_set[selected_index];
+					is_satisfied = add_edge_to_cloakset(pu, pnone, cloak_set, candidate_map);
+					is_edge_candidate[pnone->getId()] = false;
+					none_semantic_set.erase(none_semantic_set.begin() + selected_index);
+				}
+				else { //选择敏感值最小的候选边
+					is_satisfied = add_edge_to_cloakset(pu, it_minimal_svalue->first, cloak_set, candidate_map);
+					candidate_map.erase(it_minimal_svalue);
+					is_edge_candidate[it_minimal_svalue->first->getId()] = false;
+				}
+			}
+		}//end for
+		if (is_satisfied) { //成功
+			is_success.push_back(true);
+			cnt_of_success++;
+		}
+		else {
+			is_success.push_back(false);
+			cnt_of_failure++;
+		}
+		vv_cloak_sets.push_back(cloak_set);
+	}
+	bool add_edge_to_cloakset(LBS_User *&pu, Edge *new_edge, vector<Edge*> &cloak_set, map<Edge*, pair<double, double>> &candidate_map)
 	{
 		//更新匿名集和候选集
 		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
@@ -215,13 +286,11 @@ public:
 				}
 			}
 		}
-		
-
 		//计算当前状态
 		k += new_edge->get_users().size();
 		l++;
 		double candidate_svalue = 0.0, candidate_pop = 0.0;
-		if (!is_edge_candidate[new_edge->getId()]) { //第一次执行
+		if (candidate_map.find(new_edge) == candidate_map.end()) { //第一次执行或空语义边
 			const vector<Poi*> &e_pois = new_edge->get_pois();
 			for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 				int poi_type = (int)e_pois[j]->get_type();
@@ -239,9 +308,11 @@ public:
 		//cout << "find satisfied" << endl;
 		return true;
 	}
+
 private:
 	int k, l;
 	double accumulate_svalue = 0, accumulate_pop = 0;
+	bool is_satisfied;
 	bool *is_edge_selected; //hash set插入速度好慢
 	bool *is_edge_candidate;
 	bool *is_inner_node;

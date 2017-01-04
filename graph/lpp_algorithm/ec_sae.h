@@ -121,7 +121,7 @@ public:
 		accumulate_svalue = 0.0;
 		memset(is_node_selecteds, false, p_graph->get_nodes().size());
 		memset(is_node_candidate, false, p_graph->get_nodes().size());
-		double w2 = 0.06; // w2调节结构的重要程度，匿名服务器设置，会有参数讨论
+		double w2 = 0.1; // w2调节结构的重要程度，匿名服务器设置，会有参数讨论
 		bool is_satisfied = false;
 		double accumulate_svalue = 0, accumulate_pop = 0;
 		vector<EC_Node*> cloak_set;
@@ -233,7 +233,7 @@ public:
 		k += new_node->get_users().size();
 		l++;
 		double candidate_svalue = 0.0, candidate_pop = 0.0;
-		if (!is_node_candidate[new_node->get_id()]) { //第一次执行
+		if (candidate_map.find(new_node) == candidate_map.end()) { //第一次执行需要再计算边上的兴趣点
 			const vector<Poi*> &e_pois = new_node->get_pois();
 			for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 				int poi_type = (int)e_pois[j]->get_type();

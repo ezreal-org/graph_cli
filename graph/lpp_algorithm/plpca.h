@@ -109,7 +109,6 @@ public:
 		map<pair<int,EC_Node*>, pair<int, EC_Node*>> pre_map; //为每个用户执行匿名算法时，记录前驱,int表示位置，EC_Node*表示某个节点
 		vector<vector<EC_Node*>> vv_circles; //得到多个环
 		vector<EC_Node*> expand_queue;
-		vector<EC_Node*> adj_nodes;
 		int lay_now,size_of_this_lay; // accumulate_expand_index 起到类似哈希的作用,同一个EC_Node它的前驱在不同层不同位置的前驱不一致;表明扩展时第几个处理到该顶点
 		int accumulate_queue_index = 0, accumulate_expand_index = 0;
 		expand_queue.push_back(pn);
@@ -121,7 +120,7 @@ public:
 			int size_of_next_lay = 0;
 			for (int i = 0; i < size_of_this_lay; i++) {
 				EC_Node *node_now = expand_queue[accumulate_queue_index];
-				adj_nodes = node_now->get_adj_nodes();
+				vector<EC_Node*> &adj_nodes = node_now->get_adj_nodes();
 				for (int j = 0; j < adj_nodes.size(); j++) {
 					if (adj_nodes[j] == pn && lay_now>1) { //找到一个环,环起码有三条边
 						EC_Node* p_node = node_now;
