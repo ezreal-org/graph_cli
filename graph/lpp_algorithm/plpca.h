@@ -42,7 +42,9 @@ public:
 			for (int j = 0; j < nodes[i]->get_users().size(); j++) {
 				pu = nodes[i]->get_users()[j];
 				users.push_back(nodes[i]->get_users()[j]);
-				plpca(pu, nodes[i]);
+				vv_cloaks.push_back(plpca(pu, nodes[i]));
+				is_success ? cnt_of_success++ : cnt_of_failure++;
+				v_success.push_back(is_success);
 			}
 
 		}
@@ -64,8 +66,10 @@ public:
 
 		int user_cnt = vv_cloaks.size();
 		for (int i = 0; i < user_cnt; i++) {
-			cloak_set = vv_cloaks[i]; //匿名集
-			if (cloak_set.size() < 1) { //匿名失败在统计中算l_max
+			cloak_set.clear();
+			for (int j = 0; j < vv_cloaks[i].size(); j++)
+				cloak_set.push_back(vv_cloaks[i][j]->get_src_edge());
+			if (cloak_set.size() < 1) { //匿名失败,没有找到环，在统计中算l_max
 				all_edge_size += l_max;
 				all_openvetex_cnt += l_max;
 				continue;
@@ -84,7 +88,7 @@ public:
 				}
 			}
 			all_edge_size += cloak_set.size();
-			int cnt_of_circle = 0, cnt_of_openvetex = 0;
+			int cnt_of_openvetex = 0;
 			for (it_node_set = node_set.begin(); it_node_set != node_set.end(); it_node_set++) {
 				adj_edges = (*it_node_set)->getAdjEdges();
 				for (int j = 0; j < adj_edges.size(); j++) { //判断所有临近边是否都在匿名集
@@ -104,11 +108,12 @@ public:
 
 	}
 
-	void plpca(LBS_User *pu,EC_Node * const pn) //为该用户执行算法
+	vector<EC_Node*> plpca(LBS_User *pu,EC_Node * const pn) //为该用户执行算法
 	{
 		map<pair<int,EC_Node*>, pair<int, EC_Node*>> pre_map; //为每个用户执行匿名算法时，记录前驱,int表示位置，EC_Node*表示某个节点
 		vector<vector<EC_Node*>> vv_circles; //得到多个环
 		vector<EC_Node*> expand_queue;
+		vector<EC_Node*> v_cloak; //匿名集
 		int lay_now,size_of_this_lay; // accumulate_expand_index 起到类似哈希的作用,同一个EC_Node它的前驱在不同层不同位置的前驱不一致;表明扩展时第几个处理到该顶点
 		int accumulate_queue_index = 0, accumulate_expand_index = 0;
 		expand_queue.push_back(pn);
@@ -153,7 +158,7 @@ public:
 				accumulate_queue_index++;
 			}
 			size_of_this_lay = size_of_next_lay;
-		}
+		}// end for
 		//确定满足要求的最小还
 		int size_of_circle = vv_circles.size();
 		//按边数排序
@@ -172,7 +177,7 @@ public:
 		}
 		//找最小满足要求的环
 		vector<double> sensitive_vals = pu->get_sensitive_vals();
-		bool succees = false;
+		is_success = false;
 		for (int i = 0; i < size_of_circle; i++) {
 			int edge_size = vv_circles[i].size();
 			if (edge_size < pu->get_l()) continue; //边数少于用户需求l
@@ -189,30 +194,31 @@ public:
 				}
 			}
 			if (k_value >= pu->get_k() && l_value >= pu->get_l() && (accumulate_pop < 0.001 || (accumulate_pop >= 0.001 && accumulate_svalue / accumulate_pop <= pu->get_s()))) {
-				vector<Edge*> v_cloak;
 				for (int j = 0; j < edge_size; j++) {
-					v_cloak.push_back(vv_circles[i][j]->get_src_edge());
+					v_cloak.push_back(vv_circles[i][j]);
 				}
-				succees = true;
-				vv_cloaks.push_back(v_cloak);
+				is_success = true;
 				break;
 			}
 		}
-		if (succees) {
-			cnt_of_success++;
-			is_success.push_back(true);
-		}
-		else {
-			cnt_of_failure++;
-			vector<Edge*> v_cloak;
-			v_cloak.clear(); //失败时添加空匿名集，用于统计
-			vv_cloaks.push_back(v_cloak);
-			is_success.push_back(false);
-		}
+		return v_cloak;
+	}
+	vector<LBS_User*> get_users()
+	{
+		return users;
+	}
+	vector<vector<EC_Node*>> get_vv_cloak()
+	{
+		return vv_cloaks;
+	}
+	vector<bool> get_v_success()
+	{
+		return v_success;
 	}
 private:
-	vector<vector<Edge*>> vv_cloaks;
-	vector<bool> is_success;
+	vector<vector<EC_Node*>> vv_cloaks;
+	bool is_success; //记录该用户匿名是否成功
+	vector<bool> v_success;
 	vector<LBS_User*> users;
 	//统计信息
 	double anonymization_time_total;

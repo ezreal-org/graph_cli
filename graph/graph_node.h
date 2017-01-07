@@ -51,6 +51,4 @@ private:
     vector<Edge*> edges;
 };
 
-
-
 #endif //C_PLUS_PLUS_PRACTICE_GRAPH_NODE_H

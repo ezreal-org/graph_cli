@@ -6,17 +6,30 @@ edge graph nodes initialed !!
 6105 src_graph nodes 
 edge graph init done
 2674
-init nodes
-init edges
-graph init done
-223606 src_graph edges !!
-edge graph nodes initialed !!
-175343 src_graph nodes 
-edge graph init done
-13674
-total time consume:9.815
-success:288554
-failure:11446
+total time consume:0.127
+success:8455
+failure:1545
 calculate open vetex begin:
-average openvetex: 5.36934
-average cloak size: 9.2397
+average openvetex: 7.0396
+average cloak size: 14.513
+executing replay attack:
+发起:8455次攻击,其中成功:3121
+------
+total time consume:113.966
+success:1475
+failure:8525
+calculate open vetex begin:
+average openvetex: 9.334
+average cloak size: 9.759
+executing replay attack:
+发起:1475次攻击,其中成功:501
+------
+total time consume:0.13
+success:8169
+failure:1831
+calculate open vetex begin:
+average openvetex: 6.3757
+average cloak size: 14.0075
+executing replay attack:
+发起:8169次攻击,其中成功:2752
+------

@@ -105,7 +105,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies />
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
@@ -147,9 +147,9 @@
     <ClInclude Include="edge_cluster_graph.h" />
     <ClInclude Include="edge_cluster_node.h" />
     <ClInclude Include="lbs_user.h" />
-    <ClInclude Include="lpp_algorithm\ecf.h" />
     <ClInclude Include="lpp_algorithm\ec_sae.h" />
     <ClInclude Include="lpp_algorithm\plpca.h" />
+    <ClInclude Include="lpp_algorithm\replay_attack.h" />
     <ClInclude Include="lpp_algorithm\sa.h" />
     <ClInclude Include="memos\io_redirection.txt" />
     <ClInclude Include="poi.h" />

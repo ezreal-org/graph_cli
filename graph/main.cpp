@@ -16,5 +16,6 @@ int main()
 	display ^dp = gcnew display();
 	dp->Name = "display";
 	Application::Run(dp);
+
 	return 0;
 }

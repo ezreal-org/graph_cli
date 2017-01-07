@@ -16,7 +16,7 @@ s_type_poi_pop/poi_pop_all >s_require 的定义为敏感语义
 */
 
 #include "../edge_cluster_graph.h"
-#include "util.h"
+#include "../util.h"
 #include <ctime>
 #include <cstdlib>
 #include <vector>
@@ -35,6 +35,12 @@ public:
 		cnt_of_success = 0;
 		l_max = 30;
 		//打印当前地图状态
+		srand((unsigned)time(NULL));
+	}
+	~Lppa_ecsa_e()
+	{
+		delete[]is_node_selecteds;
+		delete[]is_node_candidate;
 	}
 	//保护算法
 	void lpp()
@@ -49,13 +55,13 @@ public:
 			for (int j = 0; j < nodes[i]->get_users().size(); j++) {
 				pu = nodes[i]->get_users()[j];
 				users.push_back(nodes[i]->get_users()[j]);
-				sa(pu, nodes[i]);
+				vv_cloak_sets.push_back(ec_sae(pu, nodes[i]));
+				is_success ? cnt_of_success++ : cnt_of_failure++;
+				v_success.push_back(is_success);
 			}
 
 		}
 		finish = clock();
-		delete []is_node_selecteds;
-		delete []is_node_candidate;
 		double time_cost = (double)(finish - start) / CLOCKS_PER_SEC;
 		cout << "total time consume:" << time_cost << endl;
 		cout << "success:" << cnt_of_success << endl;
@@ -74,9 +80,8 @@ public:
 		int user_cnt = vv_cloak_sets.size();
 		for (int i = 0; i < vv_cloak_sets.size(); i++) {
 			cloak_set.clear();
-			for (int j=0; j<vv_cloak_sets[i].size();j++) {
+			for (int j = 0; j < vv_cloak_sets[i].size(); j++)
 				cloak_set.push_back(vv_cloak_sets[i][j]->get_src_edge());
-			}
 			node_set.clear();
 			//init inner_node set
 			for (int j = 0; j < cloak_set.size(); j++) {
@@ -113,7 +118,7 @@ public:
 
 	}
 	//为每个用户
-	void sa(LBS_User *&pu, EC_Node *pn)
+	vector<EC_Node*> ec_sae(LBS_User *&pu, EC_Node *pn)
 	{
 		k = 0;
 		l = 0;
@@ -122,17 +127,34 @@ public:
 		memset(is_node_selecteds, false, p_graph->get_nodes().size());
 		memset(is_node_candidate, false, p_graph->get_nodes().size());
 		double w2 = 0.1; // w2调节结构的重要程度，匿名服务器设置，会有参数讨论
-		bool is_satisfied = false;
+		is_success = false;
 		double accumulate_svalue = 0, accumulate_pop = 0;
 		vector<EC_Node*> cloak_set;
 		map<EC_Node*, pair<double, double>> candidate_map;
-
 		const vector<double> &sensitive_vals = pu->get_sensitive_vals();
-		is_satisfied = add_node_to_cloakset(pu, pn, cloak_set, candidate_map);
-		for (int i = 1; i < l_max && !is_satisfied; i++) {
+		is_success = add_node_to_cloakset(pu, pn, cloak_set, candidate_map);
+		for (int i = 1; i < l_max && !is_success; i++) {
 			map<EC_Node*, pair<double, double>>::iterator it_candidate, it_maximal_score;
 			double k_score = 0, s_score = 0, struct_score = 0;
 			if (candidate_map.size() < 1) break;
+
+			/*
+			加入可控随机性
+			*/
+			double random_num = (double)rand()/RAND_MAX;
+			if (random_num < 0) {
+				int random_select = rand() % candidate_map.size();
+				it_maximal_score = candidate_map.begin();
+				int tmp_cnt = 0;
+				while (tmp_cnt < random_select) {
+					tmp_cnt++;
+					it_maximal_score++;
+				}
+				is_success = add_node_to_cloakset(pu, it_maximal_score->first, cloak_set, candidate_map);
+				is_node_candidate[it_maximal_score->first->get_id()] = false;
+				candidate_map.erase(it_maximal_score);
+				continue;
+			}
 			double minimal_miss_s = numeric_limits<double>::max(), maximal_miss_s = numeric_limits<double>::min(), maximal_score = 0;
 			//--
 			for (it_candidate = candidate_map.begin(); it_candidate != candidate_map.end(); it_candidate++) { //已经计算了的就不用计算
@@ -190,20 +212,12 @@ public:
 				}
 			}
 
-			is_satisfied = add_node_to_cloakset(pu, it_maximal_score->first, cloak_set, candidate_map);
-			candidate_map.erase(it_maximal_score);
+			is_success = add_node_to_cloakset(pu, it_maximal_score->first, cloak_set, candidate_map);
 			is_node_candidate[it_maximal_score->first->get_id()] = false;
+			candidate_map.erase(it_maximal_score);
 
 		}//end for
-		if (is_satisfied) { //成功
-			is_success.push_back(true);
-			cnt_of_success++;
-		}
-		else {
-			is_success.push_back(false);
-			cnt_of_failure++;
-		}
-		vv_cloak_sets.push_back(cloak_set);
+		return cloak_set;
 	}
 
 
@@ -233,7 +247,7 @@ public:
 		k += new_node->get_users().size();
 		l++;
 		double candidate_svalue = 0.0, candidate_pop = 0.0;
-		if (candidate_map.find(new_node) == candidate_map.end()) { //第一次执行需要再计算边上的兴趣点
+		if (!is_node_candidate[new_node->get_id()]) { //第一次执行需要再计算边上的兴趣点
 			const vector<Poi*> &e_pois = new_node->get_pois();
 			for (int j = 0; j < e_pois.size(); j++) { //多个兴趣点
 				int poi_type = (int)e_pois[j]->get_type();
@@ -250,14 +264,27 @@ public:
 		if (k < pu->get_k() || l < pu->get_l() || (accumulate_pop > 0.001 && accumulate_svalue / accumulate_pop > pu->get_s())) return false;
 		return true;
 	}
+	vector<LBS_User*> get_users()
+	{
+		return users;
+	}
+	vector<vector<EC_Node*>> get_vv_cloak()
+	{
+		return vv_cloak_sets;
+	}
+	vector<bool> get_v_success()
+	{
+		return v_success;
+	}
 private:
 	//每个匿名用户
 	int k, l;
 	bool *is_node_selecteds; //hash set插入速度好慢
 	bool *is_node_candidate; 
+	bool is_success;
 	double accumulate_svalue, accumulate_pop;
 	//统计信息
-	vector<bool> is_success;
+	vector<bool> v_success;
 	vector<LBS_User*> users;
 	vector<vector<EC_Node*>> vv_cloak_sets;
 	double anonymization_time_total;
