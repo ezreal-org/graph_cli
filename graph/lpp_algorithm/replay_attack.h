@@ -20,9 +20,11 @@ public:
 	Replay_attack(EC_Graph *p_graph)
 	{
 		this->p_graph = p_graph;
+		srand((unsigned)time(NULL));
 		sa_attack();
 		plpca_attack();
 		ec_sae_attack();
+
 	}
 	void sa_attack()
 	{
@@ -52,7 +54,6 @@ public:
 					maximal_edges.push_back(vv_cloak_set[i][j]);
 				}
 			}
-			srand(time(NULL));
 			int selected_index = rand() % maximal_edges.size();
 			vector<LBS_User*> users_in_edge = maximal_edges[selected_index]->get_users();
 			cnt_of_attack++;
@@ -92,7 +93,6 @@ public:
 					maximal_edges.push_back(vv_cloak_set[i][j]);
 				}
 			}
-			srand(time(NULL));
 			int selected_index = rand() % maximal_edges.size();
 			vector<LBS_User*> users_in_edge = maximal_edges[selected_index]->get_users();
 			cnt_of_attack++;
@@ -132,7 +132,6 @@ public:
 					maximal_edges.push_back(vv_cloak_set[i][j]);
 				}
 			}
-			srand(time(NULL));
 			int selected_index = rand() % maximal_edges.size();
 			vector<LBS_User*> users_in_edge = maximal_edges[selected_index]->get_users();
 			cnt_of_attack++;

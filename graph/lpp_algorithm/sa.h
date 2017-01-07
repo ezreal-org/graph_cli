@@ -38,6 +38,7 @@ public:
 		cnt_of_failure = 0;
 		cnt_of_success = 0;
 		l_max = 30;
+		srand(time(NULL)); //随机选择一个空白语义时，会引入一定的随机性
 		//打印当前地图状态
 	}
 	~Lppa_sa()
@@ -210,7 +211,6 @@ public:
 			else {
 				int ns_size = none_semantic_set.size();
 				if (ns_size > 0) { //存在空白语义位置
-					srand(time(NULL));
 					int selected_index = rand() % ns_size;
 					Edge *pnone = none_semantic_set[selected_index];
 					is_success = add_edge_to_cloakset(pu, pnone, cloak_set, candidate_map);

@@ -30,7 +30,7 @@ public:
 		anonymization_time_total = 0;
 		cnt_of_failure = 0;
 		cnt_of_success = 0;
-		l_max = 10;
+		l_max = 7;
 	}
 	void lpp()
 	{
